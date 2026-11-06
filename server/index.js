@@ -10,12 +10,27 @@
    ═══════════════════════════════════════════════════════════ */
 const http = require("http");
 const url = require("url");
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { spawn, execSync } = require("child_process");
 const torrentStream = require("torrent-stream");
 
 const PORT = parseInt(process.env.PORT || "7000", 10);
 const HOST = process.env.HOST || "127.0.0.1";
 
-// id -> { engine, file, name, createdAt }
+// ffmpeg availability
+let FFMPEG = null;
+try { execSync("ffmpeg -version", { stdio: "ignore" }); FFMPEG = "ffmpeg"; }
+catch (e) { try { execSync("/usr/bin/ffmpeg -version", { stdio: "ignore" }); FFMPEG = "/usr/bin/ffmpeg"; } catch (x) {} }
+// also check env
+if (process.env.FFMPEG_BIN) FFMPEG = process.env.FFMPEG_BIN;
+
+function isDirectlyPlayable(name) {
+  return /\.(mp4|webm|ogg|m4v|mov)$/i.test(name);
+}
+
+// id -> { engine, file, name, createdAt, playable, transcoding, transcodePath, transcodeError }
 const sessions = new Map();
 let nextId = 1;
 
@@ -50,16 +65,67 @@ function startTorrent(magnet, cb) {
     const file = pickVideoFile(engine.files);
     if (!file) { engine.destroy(); return cb(new Error("no playable file in torrent")); }
     const id = String(nextId++);
-    sessions.set(id, { engine, file, name: file.name, createdAt: Date.now() });
+    const playable = isDirectlyPlayable(file.name);
+    const sess = { engine, file, name: file.name, createdAt: Date.now(), playable, transcoding: false, transcodePath: null, transcodeError: null };
+    sessions.set(id, sess);
+
+    // if not directly playable, transcode with ffmpeg (if available)
+    if (!playable) {
+      if (!FFMPEG) {
+        sess.transcodeError = "ffmpeg not found — install ffmpeg for MKV/H.265 playback";
+      } else {
+        sess.transcoding = true;
+        const outPath = path.join(os.tmpdir(), `streamio_${id}.mp4`);
+        sess.transcodePath = outPath;
+        const ffmpeg = spawn(FFMPEG, [
+          "-y", "-i", "pipe:0",  // we'll feed via file read instead
+        ]);
+        // simpler: read from the torrent file's path on disk? torrent-stream gives file.path
+        // torrent-stream files have .path (relative) and engine has .path (download dir)
+        // Use file.createReadStream piped to ffmpeg stdin
+        const args = [
+          "-y",
+          "-i", "pipe:0",
+          "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+          "-c:a", "aac", "-b:a", "192k",
+          "-movflags", "+faststart",
+          outPath,
+        ];
+        const ff = spawn(FFMPEG, args, { stdio: ["pipe", "pipe", "pipe"] });
+        const src = file.createReadStream();
+        src.pipe(ff.stdin);
+        let stderr = "";
+        ff.stderr.on("data", (d) => { stderr += d.toString(); });
+        ff.on("close", (code) => {
+          if (code === 0 && fs.existsSync(outPath)) {
+            sess.transcoding = false;
+            sess.transcodedReady = true;
+          } else {
+            sess.transcoding = false;
+            sess.transcodeError = "transcode failed: " + stderr.slice(-300);
+            sess.transcodedReady = false;
+          }
+        });
+        ff.on("error", (e) => {
+          sess.transcoding = false;
+          sess.transcodeError = String(e.message);
+          sess.transcodedReady = false;
+        });
+      }
+    } else {
+      sess.transcodedReady = true;
+    }
+
     // auto-cleanup after 2h of inactivity
     setTimeout(() => {
       const s = sessions.get(id);
       if (s && Date.now() - s.createdAt > 2 * 60 * 60 * 1000) {
         try { s.engine.destroy(); } catch (e) {}
+        if (s.transcodePath) try { fs.unlinkSync(s.transcodePath); } catch (e) {}
         sessions.delete(id);
       }
     }, 2 * 60 * 60 * 1000);
-    cb(null, { id, name: file.name, size: file.length, files: engine.files.map((f, i) => ({ index: i, name: f.name, size: f.length })) });
+    cb(null, { id, name: file.name, size: file.length, playable, transcoding: sess.transcoding, files: engine.files.map((f, i) => ({ index: i, name: f.name, size: f.length })) });
   };
 
   const to = setTimeout(() => {
@@ -100,42 +166,108 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // status of a session (for transcoding progress)
+  const statusMatch = path.match(/^\/status\/(\d+)$/);
+  if (statusMatch && req.method === "GET") {
+    const id = statusMatch[1];
+    const sess = sessions.get(id);
+    if (!sess) { json(res, 404, { error: "session not found" }); return; }
+    json(res, 200, {
+      ready: sess.playable || !!sess.transcodedReady,
+      transcoding: !!sess.transcoding,
+      playable: !!sess.playable,
+      error: sess.transcodeError || null,
+      name: sess.name,
+    });
+    return;
+  }
+
   // stream a file (with range support)
   const streamMatch = path.match(/^\/stream\/(\d+)(?:\/(\d+))?$/);
   if (streamMatch && req.method === "GET") {
     const id = streamMatch[1];
-    const fileIndex = streamMatch[2] ? parseInt(streamMatch[2], 10) : null;
     const sess = sessions.get(id);
     if (!sess) { json(res, 404, { error: "session not found" }); return; }
-    const file = (fileIndex != null && sess.engine.files[fileIndex]) ? sess.engine.files[fileIndex] : sess.file;
-    if (!file) { json(res, 404, { error: "file not found" }); return; }
 
-    const total = file.length;
+    // transcoding in progress -> 202
+    if (sess.transcoding) {
+      cors(res);
+      res.writeHead(202, { "Content-Type": "application/json", "Retry-After": "5" });
+      res.end(JSON.stringify({ transcoding: true, ready: false }));
+      return;
+    }
+    // transcoding failed
+    if (!sess.playable && sess.transcodeError) {
+      json(res, 500, { error: sess.transcodeError });
+      return;
+    }
+
+    // pick the file to stream
+    let filePath = null;
+    let total = 0;
+    if (sess.transcodePath && sess.transcodedReady && fs.existsSync(sess.transcodePath)) {
+      total = fs.statSync(sess.transcodePath).size;
+      filePath = sess.transcodePath;
+    } else if (sess.file) {
+      total = sess.file.length;
+    } else {
+      json(res, 404, { error: "no file" }); return;
+    }
+
+    const file = (sess.transcodePath && sess.transcodedReady) ? null : sess.file;
+
     const range = req.headers.range;
+    if (filePath) {
+      // stream from transcoded file on disk (with range support)
+      if (range) {
+        const m = /bytes=(\d+)-(\d*)/.exec(range);
+        if (m) {
+          const start = parseInt(m[1], 10);
+          const end = m[2] ? parseInt(m[2], 10) : total - 1;
+          const chunkSize = end - start + 1;
+          res.writeHead(206, {
+            "Content-Range": `bytes ${start}-${end}/${total}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": chunkSize,
+            "Content-Type": "video/mp4",
+          });
+          const stream = fs.createReadStream(filePath, { start, end });
+          stream.pipe(res);
+          stream.on("error", () => { try { res.end(); } catch (e) {} });
+          return;
+        }
+      }
+      res.writeHead(200, { "Content-Length": total, "Content-Type": "video/mp4", "Accept-Ranges": "bytes" });
+      const stream = fs.createReadStream(filePath);
+      stream.pipe(res);
+      stream.on("error", () => { try { res.end(); } catch (e) {} });
+      return;
+    }
+
+    // stream from torrent (original, range support)
+    const sessFile = file;
+    if (!sessFile) { json(res, 404, { error: "file not found" }); return; }
+    const total2 = sessFile.length;
     if (range) {
       const m = /bytes=(\d+)-(\d*)/.exec(range);
       if (m) {
         const start = parseInt(m[1], 10);
-        const end = m[2] ? parseInt(m[2], 10) : total - 1;
+        const end = m[2] ? parseInt(m[2], 10) : total2 - 1;
         const chunkSize = end - start + 1;
         res.writeHead(206, {
-          "Content-Range": `bytes ${start}-${end}/${total}`,
+          "Content-Range": `bytes ${start}-${end}/${total2}`,
           "Accept-Ranges": "bytes",
           "Content-Length": chunkSize,
           "Content-Type": "video/mp4",
         });
-        const stream = file.createReadStream({ start, end });
+        const stream = sessFile.createReadStream({ start, end });
         stream.pipe(res);
         stream.on("error", () => { try { res.end(); } catch (e) {} });
         return;
       }
     }
-    res.writeHead(200, {
-      "Content-Length": total,
-      "Content-Type": "video/mp4",
-      "Accept-Ranges": "bytes",
-    });
-    const stream = file.createReadStream();
+    res.writeHead(200, { "Content-Length": total2, "Content-Type": "video/mp4", "Accept-Ranges": "bytes" });
+    const stream = sessFile.createReadStream();
     stream.pipe(res);
     stream.on("error", () => { try { res.end(); } catch (e) {} });
     return;

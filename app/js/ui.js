@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl } from "./api.js?v=3";
-import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=3";
-import { open as openPlayer } from "./player.js?v=3";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl } from "./api.js?v=4";
+import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=4";
+import { open as openPlayer } from "./player.js?v=4";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -365,8 +365,26 @@ export function wireStreams(box){
       try{
         const info = await backendPlay(b.dataset.src);
         const video = document.getElementById("video");
-        if (video){ video.src = info.streamUrl; video.play().catch(()=>{}); }
-        const st = document.getElementById("playerStatus"); if (st){ st.textContent = ""; st.classList.add("hidden"); }
+        const st = document.getElementById("playerStatus");
+        if (info.transcoding){
+          if (st){ st.textContent = "🎞 transcoding to a playable format… (this can take a few minutes)"; st.classList.remove("hidden"); }
+          // poll status until ready
+          let ready = false;
+          for (let i = 0; i < 300 && !ready; i++){
+            await new Promise(r => setTimeout(r, 2000));
+            try{
+              const sr = await fetch(`${backendUrl()}/status/${info.id}`);
+              const sd = await sr.json();
+              if (sd.ready){ ready = true; break; }
+              if (sd.error){ throw new Error(sd.error); }
+              if (st) st.textContent = "🎞 transcoding… " + (i * 2) + "s";
+            }catch(e){ if (st) st.textContent = "transcode failed: " + e.message; break; }
+          }
+          if (ready && video){ video.src = info.streamUrl; video.play().catch(()=>{}); if (st){ st.textContent = ""; st.classList.add("hidden"); } }
+        } else {
+          if (video){ video.src = info.streamUrl; video.play().catch(()=>{}); }
+          if (st){ st.textContent = ""; st.classList.add("hidden"); }
+        }
       }catch(e){
         console.warn("backend play failed, falling back to webtorrent", e);
         openPlayer({ kind: "torrent", src: b.dataset.src, ref: b.dataset.ref, title: b.dataset.title });
