@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · main.js — routes, nav, addons, delegation
    ═══════════════════════════════════════════════════════════ */
-import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js?v=5";
-import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl, addonCollection } from "./api.js?v=5";
-import { toggleSaved } from "./library.js?v=5";
-import * as player from "./player.js?v=5";
+import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js?v=6";
+import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl, addonCollection, stremioServerUrl, setStremioServerUrl, stremioServerAvailable } from "./api.js?v=6";
+import { toggleSaved } from "./library.js?v=6";
+import * as player from "./player.js?v=6";
 
 const root = $("#view");
 
@@ -216,6 +216,25 @@ if (debridPlantBtn) debridPlantBtn.onclick = async () => {
     $("#debridKey").placeholder = "that key didn't sprout — check it";
   }
   setTimeout(() => $("#debridKey").placeholder = "paste your API key…", 2600);
+};
+
+/* Stremio server test/save */
+const stremioSaveBtn = $("#stremioServerSave");
+if (stremioSaveBtn) stremioSaveBtn.onclick = () => {
+  const u = $("#stremioServerUrl").value.trim() || "http://127.0.0.1:11470";
+  setStremioServerUrl(u);
+  $("#stremioServerStatus").textContent = `saved: ${u} 🌿`;
+};
+const stremioTestBtn = $("#stremioServerTest");
+if (stremioTestBtn) stremioTestBtn.onclick = async () => {
+  const u = $("#stremioServerUrl").value.trim() || stremioServerUrl();
+  setStremioServerUrl(u);
+  $("#stremioServerStatus").textContent = "testing…";
+  try{
+    const r = await fetch(`${u}/settings`, { signal: AbortSignal.timeout(2000) });
+    const d = await r.json();
+    $("#stremioServerStatus").textContent = r.ok ? `✓ connected — Stremio server (${d.values?.serverVersion || "ok"})` : `✗ ${r.status}`;
+  }catch(e){ $("#stremioServerStatus").textContent = `✗ offline (${e.message})` }
 };
 
 /* playback engine test/save */

@@ -253,6 +253,20 @@ export async function addonCollection(){
   })).filter(a => a.url);
 }
 
+/* ── Stremio streaming server (native libtorrent + ffmpeg) ─ */
+const LS_STREMIO = "streamio.stremioServerUrl";
+export function stremioServerUrl(){ return (localStorage.getItem(LS_STREMIO) || "http://127.0.0.1:11470").replace(/\/+$/, "") }
+export function setStremioServerUrl(u){ localStorage.setItem(LS_STREMIO, u.trim()) }
+export async function stremioServerAvailable(){
+  try{
+    const r = await fetch(`${stremioServerUrl()}/settings`, { method: "GET", signal: AbortSignal.timeout(2000) });
+    return r.ok;
+  }catch(e){ return false }
+}
+export function stremioStreamUrl(infoHash, fileIdx = 0, filename = "video.mp4"){
+  return `${stremioServerUrl()}/${infoHash}/${fileIdx}/${encodeURIComponent(filename)}`;
+}
+
 export const SEEDS = [
   {
     name: "Torrentio", url: "https://torrentio.strem.fun/manifest.json",

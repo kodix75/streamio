@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/theme.css?v=5"/>
-  <link rel="stylesheet" href="css/menu.css?v=5"/>
-  <link rel="stylesheet" href="css/cards.css?v=5"/>
+  <link rel="stylesheet" href="css/theme.css?v=6"/>
+  <link rel="stylesheet" href="css/menu.css?v=6"/>
+  <link rel="stylesheet" href="css/cards.css?v=6"/>
 </head>
 <body>
   <!-- ══ ambient forest ══ -->
@@ -80,7 +80,16 @@
     </div>
     <div id="addonList" class="addon-list"></div>
     <details class="debrid-box">
-      <summary>🔑 debrid — unlock any torrent in the browser (Real-Debrid / AllDebrid)</summary>
+      <summary>🔗 Stremio server — use Stremio's native engine (recommended)</summary>
+      <p class="muted small">If you have <b>Stremio</b> (or the Stremio service) running, Streamio can use its
+        native libtorrent + ffmpeg engine for any film. Default: http://127.0.0.1:11470</p>
+      <div class="add-row">
+        <input id="stremioServerUrl" type="url" placeholder="http://127.0.0.1:11470"/>
+        <button id="stremioServerTest" class="btn ghost">test</button>
+        <button id="stremioServerSave" class="btn">save</button>
+      </div>
+      <p id="stremioServerStatus" class="muted small"></p>
+    </details>
       <p class="muted small">Paste your API key to plant a debrid-enabled Torrentio. Streams then arrive as direct
         files that play instantly. Your key stays in your browser's localStorage.</p>
       <div class="add-row">
@@ -241,6 +250,6 @@
     <span>Streamio — grown in the forest, for the forest. Sources: <a href="https://github.com/Stremio/stremio-addon-sdk" target="_blank" rel="noopener">community addons</a> · Cinemeta. Stream responsibly. 🍃</span>
   </footer>
 
-  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>

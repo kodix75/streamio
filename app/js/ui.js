@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl } from "./api.js?v=5";
-import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=5";
-import { open as openPlayer } from "./player.js?v=5";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=6";
+import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=6";
+import { open as openPlayer } from "./player.js?v=6";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -355,7 +355,16 @@ export function wireStreams(box){
   $$(".stream", box).forEach(b => b.onclick = async () => {
     if (b.dataset.kind === "external"){ window.open(b.dataset.src, "_blank"); return }
     if (!b.dataset.src && b.dataset.kind !== "yt") return;
-    // torrents: prefer the local backend (real BitTorrent peers) when available
+    // torrents: prefer Stremio server (native libtorrent + ffmpeg) if available
+    if (b.dataset.kind === "torrent" && (await stremioServerAvailable().catch(()=>false))){
+      const infoHash = b.dataset.src?.match(/btih:([a-fA-F0-9]+)/)?.[1];
+      if (infoHash){
+        const streamUrl = stremioStreamUrl(infoHash, 0, "video.mp4");
+        openPlayer({ kind: "file", src: streamUrl, ref: b.dataset.ref, title: b.dataset.title });
+        return;
+      }
+    }
+    // torrents: fall back to local backend (torrent-stream) if available
     if (b.dataset.kind === "torrent" && (await backendAvailable().catch(()=>false))){
       const btn = b;
       btn.style.opacity = ".6"; btn.style.pointerEvents = "none";
