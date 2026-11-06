@@ -167,7 +167,8 @@ Cinemeta + Stremio addon protocol · hls.js · WebTorrent (CDN‑lazy) · Electr
 | `streamio` says command not found | `export PATH=$PATH:~/.local/bin` (add it to `~/.bashrc`) |
 | posters don't load | cinemeta is down or offline; wait or plant your catalogs from addons |
 | torrents won't start | try a stream with real peers, or use a debrid addon; webtorrent needs public swarm. The player falls back to the trailer when a swarm stays quiet |
-| port busy | `streamio --port 8488` or `streamio --stop` first |
+| port busy (web) | `streamio --stop` first, or `streamio --port 8488` |
+| backend port 7000 busy | `PORT=7001 npm start` and set the URL in addons → playback engine |
 
 ## 💚 thanks & kin
 

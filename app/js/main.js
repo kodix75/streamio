@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · main.js — routes, nav, addons, delegation
    ═══════════════════════════════════════════════════════════ */
-import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js";
-import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl } from "./api.js";
-import { toggleSaved } from "./library.js";
-import * as player from "./player.js";
+import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js?v=3";
+import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl } from "./api.js?v=3";
+import { toggleSaved } from "./library.js?v=3";
+import * as player from "./player.js?v=3";
 
 const root = $("#view");
 

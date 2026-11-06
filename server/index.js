@@ -154,6 +154,16 @@ const server = http.createServer((req, res) => {
   json(res, 404, { error: "not found" });
 });
 
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE") {
+    console.error(`🌿 port ${PORT} is already in use — is another streamio-backend running?`);
+    console.error("   stop it first, or pick another port:  PORT=7001 npm start");
+    process.exit(0);
+  }
+  console.error("backend error:", e);
+  process.exit(1);
+});
+
 server.listen(PORT, HOST, () => {
   console.log(`🌿 streamio-backend listening on http://${HOST}:${PORT}`);
   console.log("   health:  curl http://127.0.0.1:" + PORT + "/health");
