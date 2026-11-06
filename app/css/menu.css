@@ -1,0 +1,94 @@
+/* ═══════════════════════════════════════════════════════════
+   STREAMIO · menu.css — the floating glass menu
+   signature: canopy foliage passing OVER the menu's top edge
+   ═══════════════════════════════════════════════════════════ */
+
+.menu-wrap{
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  display:flex; justify-content:center;
+}
+
+.menu{
+  margin-top:16px;
+  display:flex; align-items:center; gap:14px;
+  border-radius:99px;
+  background:var(--glass);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow), inset 0 1px 0 rgba(210,255,220,.07);
+  backdrop-filter:blur(16px) saturate(1.25);
+  -webkit-backdrop-filter:blur(16px) saturate(1.25);
+  padding:9px 14px 9px 18px;
+  animation:float-in .6s cubic-bezier(.2,.9,.25,1.2) both;
+}
+@keyframes float-in{from{opacity:0; translate:0 -26px}}
+
+.brand{
+  display:flex; align-items:center; gap:9px;
+  font-family:var(--serif); font-style:italic; font-weight:600; font-size:21px;
+  color:var(--text); letter-spacing:1px;
+}
+.brand img{filter:drop-shadow(0 0 10px rgba(87,196,126,.5))}
+.brand:hover{color:var(--glow)}
+
+.links{display:flex; gap:4px}
+.links a{
+  color:var(--text-dim); font-size:14px; font-weight:600; padding:7px 13px;
+  border-radius:99px; transition:.18s;
+}
+.links a:hover{color:var(--text); background:rgba(123,227,139,.08)}
+.links a.on{
+  color:#07130b; background:linear-gradient(135deg,var(--glow),var(--moss));
+  box-shadow:0 6px 18px -8px rgba(87,196,126,.6);
+}
+
+.tools{display:flex; align-items:center; gap:9px}
+.search{display:flex; align-items:center; gap:8px; padding:0 12px}
+.search input{
+  background:none; border:none; outline:none; color:var(--text);
+  font:inherit; font-size:13px; width:168px; height:34px;
+}
+.search input::placeholder{color:rgba(220,239,226,.4)}
+.search svg{color:var(--text-dim); flex:none}
+
+/* ── THE CANOPY — texture elements passing above the menu ─── */
+.canopy{position:absolute; inset:0; pointer-events:none; user-select:none}
+.canopy .leaf{position:absolute; opacity:.95}
+.canopy .left {left:calc(50% - 502px); top:-14px; width:112px; height:68px; z-index:1}
+.canopy .mid  {left:calc(50% + 352px); top:-54px; width:46px; height:84px; z-index:3;
+               transform:rotate(9deg); opacity:.92; transform-origin:top center}
+.canopy .right{left:calc(50% + 386px); top:-14px; width:112px; height:68px; z-index:1;
+               transform:scaleX(-1)}
+.canopy .left , .canopy .right { filter:drop-shadow(0 10px 12px rgba(0,0,0,.5)) }
+.canopy .mid   { filter:drop-shadow(0 10px 14px rgba(0,0,0,.55)) }
+.canopy .mid{ animation:sway 7s ease-in-out infinite alternate; transform-origin:top center }
+@keyframes sway{from{rotate:-2.5deg}to{rotate:3.5deg}}
+
+/* soft shadow the foliage casts on the glass bar */
+.menu::before{
+  content:""; position:absolute; inset:-16px 44px auto 44px; height:34px; z-index:-1;
+  background:
+    radial-gradient(46px 26px at 20% 0%, rgba(0,0,0,.35), transparent 70%),
+    radial-gradient(60px 30px at 84% 0%, rgba(0,0,0,.4), transparent 70%);
+  filter:blur(6px);
+}
+
+/* hanging vines from the viewport top, page corners */
+.vine{
+  position:fixed; top:0; z-index:49; opacity:.85; pointer-events:none;
+  filter:drop-shadow(0 8px 10px rgba(0,0,0,.45));
+}
+.vine.l{left:min(4vw,54px)}
+.vine.r{right:min(4vw,54px); transform:scaleX(-1)}
+@media (max-width:980px){ .vine{display:none} }
+
+/* ── responsive ──────────────────────────────────────────── */
+@media (max-width:760px){
+  .menu{margin-top:10px; padding:8px 10px; gap:8px; flex-wrap:wrap; inset-inline:10px;
+        position:relative; justify-content:center; border-radius:22px}
+  .menu-wrap{position:fixed}
+  .links{order:3; width:100%; justify-content:center}
+  .search input{width:104px}
+  .canopy .left{left:6vw}
+  .canopy .mid{display:none}
+  .canopy .right{left:auto; right:6vw}
+}

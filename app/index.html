@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Streamio 🌿 — a media center for the forest</title>
+  <meta name="description" content="Streamio — a humid, forest-dim media center. Movies & series from Cinemeta and any Stremio-compatible addon."/>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/theme.css"/>
+  <link rel="stylesheet" href="css/menu.css"/>
+  <link rel="stylesheet" href="css/cards.css"/>
+</head>
+<body>
+  <!-- ══ ambient forest ══ -->
+  <div class="forest-bg" aria-hidden="true">
+    <div class="rays"></div>
+    <div class="rain"></div>
+    <div class="grain"></div>
+  </div>
+
+  <!-- ══ floating glass menu, foliage passing over its top edge ══ -->
+  <header class="menu-wrap">
+    <nav class="menu" aria-label="main">
+      <a class="brand" href="#/home">
+        <img src="assets/logo.svg" alt="" width="30" height="30"/>
+        <span>Streamio</span>
+      </a>
+      <div class="links" id="navLinks">
+        <a href="#/home">Home</a>
+        <a href="#/browse/movie">Movies</a>
+        <a href="#/browse/series">Series</a>
+        <a href="#/library">Library</a>
+      </div>
+      <div class="tools">
+        <label class="search glass-in">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
+          <input id="q" type="search" placeholder="search the forest…" autocomplete="off"/>
+        </label>
+        <button id="addonsBtn" class="chip" title="addons — connect sources">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5a2.5 2.5 0 1 0-5 0V5H4a2 2 0 0 0-2 2v3.5h1.5a2.5 2.5 0 1 1 0 5H2V19a2 2 0 0 0 2 2h3.5v-1.5a2.5 2.5 0 1 1 5 0V21H16a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 1 0 0-5Z"/></svg>
+          <span id="addonCount">addons</span>
+        </button>
+      </div>
+    </nav>
+    <div class="canopy" aria-hidden="true">
+      <svg class="leaf left" viewBox="0 0 120 74"><path d="M8 74C2 46 10 18 34 0c-4 26-2 48 10 74Z" fill="url(#lgA)"/><path d="M34 74C36 48 48 24 74 10 58 34 52 52 52 74Z" fill="url(#lgB)"/><path d="M62 74C70 52 88 38 112 34c-16 12-26 24-30 40Z" fill="url(#lgA)"/><defs><linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d5330"/><stop offset="1" stop-color="#0a2b18"/></linearGradient><linearGradient id="lgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f8a52"/><stop offset="1" stop-color="#123c22"/></linearGradient></defs></svg>
+      <svg class="leaf mid" viewBox="0 0 60 110"><path d="M18 2c16 18 20 50 8 106-6-34-2-70 6-106Z" fill="url(#lgC)"/><path d="M44 6c10 14 14 34 10 56-8-16-12-36-10-56Z" fill="#14381f"/><defs><linearGradient id="lgC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f6b3f"/><stop offset="1" stop-color="#0c2b17"/></linearGradient></defs></svg>
+      <svg class="leaf right" viewBox="0 0 120 74"><path d="M112 74c6-28-2-56-26-74 4 26 2 48-10 74Z" fill="url(#lgD)"/><path d="M86 74C84 48 72 24 46 10c16 24 22 42 22 64Z" fill="url(#lgE)"/><path d="M58 74C50 52 32 38 8 34c16 12 26 24 30 40Z" fill="url(#lgD)"/><defs><linearGradient id="lgD" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d5330"/><stop offset="1" stop-color="#0a2b18"/></linearGradient><linearGradient id="lgE" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f8a52"/><stop offset="1" stop-color="#123c22"/></linearGradient></defs></svg>
+    </div>
+  </header>
+
+  <!-- ══ views ══ -->
+  <main id="view"></main>
+
+  <!-- ══ addon manager ══ -->
+  <dialog id="addons">
+    <div class="dlg-head">
+      <h2>🌿 Addons</h2>
+      <button class="icon-btn" data-close title="close">✕</button>
+    </div>
+    <p class="muted small">Streamio speaks the
+      <a href="https://github.com/Stremio/stremio-addon-sdk" target="_blank" rel="noopener">Stremio addon protocol</a> —
+      paste any addon manifest URL and its catalogs &amp; streams sprout here.</p>
+    <div class="add-row">
+      <input id="addonUrl" type="url" placeholder="https://…/manifest.json (or stremio://… )"/>
+      <button id="addonAdd" class="btn">Plant it</button>
+    </div>
+    <div id="addonList" class="addon-list"></div>
+    <p class="muted small">Want streams for torrents &amp; sources? Try official community manifests like
+      <code>https://torrentio.strem.fun/manifest.json</code> or Cinemeta's own
+      <code>https://v3-cinemeta.strem.io/manifest.json</code>.</p>
+  </dialog>
+
+  <!-- ══ detail overlay ══ -->
+  <dialog id="detail"></dialog>
+
+  <!-- ══ player overlay ══ -->
+  <div id="player" class="player hidden">
+    <button class="player-close icon-btn" data-close title="back to the forest (esc)">✕ back</button>
+    <video id="video" controls autoplay playsinline></video>
+    <iframe id="ytframe" class="hidden" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+    <div id="playerStatus" class="player-status hidden"></div>
+  </div>
+
+  <footer>
+    <img src="assets/logo.svg" alt="" width="22" height="22"/>
+    <span>Streamio — grown in the forest, for the forest. Sources: <a href="https://github.com/Stremio/stremio-addon-sdk" target="_blank" rel="noopener">community addons</a> · Cinemeta. Stream responsibly. 🍃</span>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

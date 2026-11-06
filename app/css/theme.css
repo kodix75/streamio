@@ -1,0 +1,185 @@
+/* ═══════════════════════════════════════════════════════════
+   STREAMIO · theme.css — the forest floor
+   deep rainforest dim · mist light · moss accents
+   ═══════════════════════════════════════════════════════════ */
+
+:root{
+  --bg-0:#040d08;            /* night canopy shadow   */
+  --bg-1:#091a11;            /* deep pine             */
+  --bg-2:#0e2718;            /* damp understory       */
+  --lg1:#2f6b3f;  --lg2:#123c22; --lg3:#1d5330;
+  --moss:#57c47e;            /* fern highlight        */
+  --glow:#7be38b;            /* mist-lime accent      */
+  --water:#155a3a;
+  --text:#dcefe2;
+  --text-dim:rgba(220,239,226,.62);
+  --line:rgba(190,240,205,.13);
+  --glass:rgba(13,36,23,.55);
+  --glass-solid:#0b2416;
+  --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --sans:"Manrope",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --r:16px;
+  --shadow:0 18px 50px -18px rgba(0,0,0,.75);
+  --font-path:"assets/";
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; padding:0 0 70px;
+  font-family:var(--sans); color:var(--text);
+  background:
+    radial-gradient(1200px 700px at 18% -6%, #123c22 0%, transparent 60%),
+    radial-gradient(900px 600px at 85% 4%, #0f341f 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 70%);
+  background-attachment:fixed;
+  min-height:100vh; overflow-x:hidden;
+}
+
+a{color:var(--moss); text-decoration:none}
+a:hover{color:var(--glow)}
+h1,h2,h3{font-family:var(--serif); font-weight:600; letter-spacing:.5px}
+h1{font-size:clamp(30px,4.4vw,46px); font-style:italic; margin:.4em 0 .2em}
+h2{font-size:clamp(20px,2.6vw,27px); margin:0}
+h3{font-size:19px; margin:.2em 0}
+code{background:rgba(123,227,139,.09); padding:2px 7px; border-radius:8px; font-size:.86em}
+.muted{color:var(--text-dim)}
+.small{font-size:12.5px; line-height:1.6}
+
+/* ── ambient: god rays · rain · grain ─────────────────────── */
+.forest-bg{position:fixed; inset:0; z-index:-1; pointer-events:none}
+.rays{
+  position:absolute; inset:-10% 60% 0 22%;
+  background:
+    linear-gradient(112deg, transparent 30%, rgba(216,255,225,.05) 38%, transparent 44%),
+    linear-gradient(100deg, transparent 52%, rgba(216,255,225,.045) 58%, transparent 64%),
+    linear-gradient(125deg, transparent 70%, rgba(216,255,225,.035) 76%, transparent 82%);
+  filter:blur(14px);
+  mask:linear-gradient(180deg,#000, transparent 78%);
+}
+.rain{
+  position:absolute; inset:0; opacity:.5;
+  background-image:
+    repeating-linear-gradient(78deg, transparent 0 217px, rgba(214,245,222,.045) 217px 219px),
+    repeating-linear-gradient(76deg, transparent 0 341px, rgba(214,245,222,.03) 341px 342px);
+  -webkit-mask:linear-gradient(180deg,#000 0%, transparent 62%);
+          mask:linear-gradient(180deg,#000 0%, transparent 62%);
+  animation:drift 14s linear infinite;
+}
+@keyframes drift{to{translate:46px 0}}
+.grain{
+  position:absolute; inset:0; opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── glass primitives ─────────────────────────────────────── */
+.glass-in{
+  background:rgba(6,17,11,.55); border:1px solid var(--line);
+  border-radius:99px;
+}
+
+/* ── floating menu (shell only — sits in menu.css) ────────── */
+main{max-width:1280px; margin:0 auto; padding:0 22px}
+
+/* ── hero ─────────────────────────────────────────────────── */
+.hero{
+  position:relative; margin-top:96px; border-radius:22px; overflow:hidden;
+  border:1px solid var(--line); box-shadow:var(--shadow);
+  background:url("../assets/forest.svg") center/cover no-repeat, var(--bg-2);
+  min-height:320px; display:flex; align-items:flex-end;
+}
+.hero::after{ /* humid fade so text breathes */
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, transparent 22%, rgba(4,13,8,.86) 78%);
+}
+.hero-inner{position:relative; z-index:1; padding:26px 30px 24px; width:100%;
+  display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap}
+.hero-meta{flex:1 1 340px; min-width:280px}
+.hero-title{font-size:clamp(34px,5vw,56px); line-height:1; font-style:italic; margin:.15em 0 .3em; text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.hero-sub{color:var(--text-dim); max-width:560px; line-height:1.65; margin:0 0 .6em}
+.hero-actions{display:flex; gap:10px; flex-wrap:wrap}
+.hero-poster{
+  width:132px; aspect-ratio:2/3; border-radius:14px; object-fit:cover;
+  box-shadow:0 14px 40px rgba(0,0,0,.55), 0 0 0 1px var(--line);
+  transform:rotate(-2deg);
+}
+.rating{display:inline-flex; align-items:center; gap:6px; color:#ffd98a; font-weight:800;
+  background:rgba(255,217,138,.1); padding:4px 10px; border-radius:99px; font-size:12px}
+.rating svg{translate:0 1px}
+
+/* ── buttons & chips ──────────────────────────────────────── */
+.btn{
+  font:inherit; font-weight:800; cursor:pointer; color:#07130b;
+  background:linear-gradient(135deg,var(--glow),var(--moss));
+  border:none; border-radius:99px; padding:10px 20px;
+  display:inline-flex; align-items:center; gap:8px;
+  box-shadow:0 8px 24px -8px rgba(87,196,126,.55);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.btn:hover{transform:translateY(-2px); box-shadow:0 12px 30px -8px rgba(123,227,139,.7)}
+.btn.ghost{
+  color:var(--text); background:var(--glass); border:1px solid var(--line);
+  box-shadow:none; backdrop-filter:blur(10px);
+}
+.icon-btn{
+  background:var(--glass); border:1px solid var(--line); color:var(--text);
+  border-radius:99px; padding:7px 13px; cursor:pointer; font:inherit; font-size:13px;
+}
+.icon-btn:hover{border-color:rgba(123,227,139,.4)}
+.chip{
+  background:transparent; border:1px solid var(--line); color:var(--text-dim);
+  font:inherit; font-size:13px; border-radius:99px; padding:7px 14px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:7px; transition:.15s;
+}
+.chip:hover,.chip.on{color:var(--glow); border-color:rgba(123,227,139,.45); background:rgba(123,227,139,.07)}
+.row-head{display:flex; align-items:baseline; justify-content:space-between; margin:34px 0 14px}
+.row-title{display:flex; align-items:center; gap:10px}
+.row-title::before{content:""; width:7px; height:7px; border-radius:99px; background:var(--moss);
+  box-shadow:0 0 12px var(--moss); translate:0 -1px}
+.genre-bar{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 6px}
+
+/* ── dialogs ─────────────────────────────────────────────── */
+dialog{
+  background:var(--glass-solid); color:var(--text); border:1px solid var(--line);
+  border-radius:20px; padding:26px; max-width:860px; width:min(94vw,860px);
+  box-shadow:var(--shadow); backdrop-filter:blur(18px);
+}
+dialog::backdrop{background:rgba(2,8,5,.72); backdrop-filter:blur(6px)}
+.dlg-head{display:flex; align-items:center; justify-content:space-between}
+
+/* ── player ──────────────────────────────────────────────── */
+.player{
+  position:fixed; inset:0; z-index:60; background:rgba(2,7,4,.96);
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
+  padding:26px; backdrop-filter:blur(8px);
+}
+.player video,.player iframe{
+  width:min(96vw,1400px); aspect-ratio:16/9; max-height:84vh; border-radius:18px;
+  background:#000; box-shadow:0 30px 90px rgba(0,0,0,.8), 0 0 0 1px var(--line);
+}
+.player iframe{border:0}
+.player.hidden{display:none}
+.player .icon-btn{position:fixed; top:18px; right:18px; z-index:2}
+#player.video-main iframe{display:none}
+#player.yt-main video{display:none}
+.player-status{position:absolute; bottom:30px; color:var(--text-dim); font-size:14px}
+
+/* ── skeleton mist loading ───────────────────────────────── */
+.skel{
+  border-radius:12px; background:linear-gradient(100deg,#0c2417 30%,#12392a 50%,#0c2417 70%);
+  background-size:200% 100%; animation:wet 1.6s linear infinite; color:transparent;
+}
+@keyframes wet{to{background-position:-200% 0}}
+
+/* ── footer ──────────────────────────────────────────────── */
+footer{
+  margin-top:60px; padding:26px 28px; text-align:center; color:var(--text-dim);
+  font-size:13px; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;
+  border-top:1px solid var(--line);
+}
+footer img{filter:drop-shadow(0 0 8px rgba(87,196,126,.4))}
+
+::selection{background:rgba(123,227,139,.28)}
+::-webkit-scrollbar{width:11px; height:11px}
+::-webkit-scrollbar-thumb{background:#16422a; border-radius:99px; border:3px solid var(--bg-0)}
+::-webkit-scrollbar-track{background:transparent}

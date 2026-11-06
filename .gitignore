@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+app/assets/*.tmp.*
+*.AppImage
+*.flatpak
+*.flatpak-builder/
+.flatpak-builder/
+repo/
+.DS_Store
+desktop/node_modules/
+desktop/out/

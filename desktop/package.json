@@ -1,0 +1,32 @@
+{
+  "name": "streamio",
+  "productName": "Streamio",
+  "version": "0.1.0",
+  "description": "A media center for the forest — movies & series from community addons.",
+  "main": "main.js",
+  "author": "aidan Genoud (kodix75)",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --linux appimage deb",
+    "dist:appimage": "electron-builder --linux appimage"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "streamio.forest",
+    "productName": "Streamio",
+    "directories": { "output": "out" },
+    "files": ["main.js"],
+    "extraFiles": [{ "from": "../app", "to": "app" }],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "AudioVideo;Video",
+      "icon": "icons",
+      "mimeTypes": ["x-scheme-handler/streamio"]
+    },
+    "appImage": { "artifactName": "Streamio-${version}.AppImage" }
+  }
+}

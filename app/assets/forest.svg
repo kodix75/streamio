@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="fl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c2618"/><stop offset=".45" stop-color="#081b10"/><stop offset="1" stop-color="#040d08"/>
+    </linearGradient>
+    <radialGradient id="fm" cx="0.38" cy="0.6" r="0.8">
+      <stop offset="0" stop-color="#bfe8c9" stop-opacity=".18"/><stop offset=".6" stop-color="#9fd4ae" stop-opacity=".05"/><stop offset="1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9ffe2" stop-opacity=".12"/><stop offset="1" stop-color="#d9ffe2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="leaf1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6b3f"/><stop offset="1" stop-color="#123c22"/></linearGradient>
+    <linearGradient id="leaf2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#57d183"/><stop offset="1" stop-color="#1d5330"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0e2b1d"/><stop offset=".5" stop-color="#155a3a" stop-opacity=".5"/><stop offset="1" stop-color="#0e2b1d"/></linearGradient>
+    <filter id="fblur" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="softA" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#fl)"/>
+  <rect width="1600" height="900" fill="url(#fm)"/>
+  <g filter="url(#fblur)">
+    <polygon points="330,0 470,0 190,900 20,900" fill="url(#fray)"/>
+    <polygon points="660,0 730,0 480,900 380,900" fill="url(#fray)"/>
+    <polygon points="1150,0 1230,0 950,900 830,900" fill="url(#fray)" opacity=".75"/>
+    <polygon points="1450,0 1500,0 1300,900 1180,900" fill="url(#fray)" opacity=".55"/>
+  </g>
+  <g fill="#0a2214" opacity=".92">
+    <path d="M170 0c50 140 40 300-10 450l40 30c60-160 58-330 20-480Z"/>
+    <path d="M480 0c30 130 20 260-24 380l36 26c50-130 52-270 26-406Z"/>
+    <path d="M760 0c34 120 26 250-18 370l40 30c52-140 54-280 22-400Z"/>
+    <path d="M1080 0c30 140 22 290-20 430l38 28c50-150 54-310 22-458Z"/>
+    <path d="M1420 0c40 150 34 320-12 460l42 30c56-160 60-330 26-490Z"/>
+  </g>
+  <path d="M0 210c200-30 430-38 660-16 200 20 380 46 500 76l-46 22c-120-30-300-56-500-70-230-16-450-8-614 36Z" fill="#123c22" opacity=".6"/>
+  <path d="M300 120c160-18 330-14 500 12l-40 20c-160-22-320-28-460-8Z" fill="#0d2a19" opacity=".7"/>
+  <path d="M0 640c260-40 560-44 860-28 280 16 540 20 740 4l0 284L0 900Z" fill="#06130c"/>
+  <path d="M-20 720c300-34 620-30 900-16 280 14 480 20 740 6l0 190-1640 0Z" fill="url(#water)" opacity=".85"/>
+  <g filter="url(#softA)" fill="#caffe0" opacity=".2">
+    <ellipse cx="430" cy="740" rx="150" ry="9"/><ellipse cx="1020" cy="772" rx="200" ry="10"/>
+  </g>
+  <g fill="#1b3a26">
+    <ellipse cx="300" cy="800" rx="34" ry="13"/><ellipse cx="700" cy="838" rx="40" ry="14"/>
+    <ellipse cx="1180" cy="806" rx="28" ry="10"/><ellipse cx="1460" cy="846" rx="36" ry="12"/>
+  </g>
+  <g fill="#2e5335" opacity=".65">
+    <ellipse cx="690" cy="834" rx="15" ry="5"/><ellipse cx="1170" cy="802" rx="10" ry="4"/>
+  </g>
+  <g fill="#0f3019">
+    <path d="M120 900c20-70 60-110 130-140-50 52-70 90-74 140Z"/>
+    <path d="M60 900c-14-58-52-94-120-116 40 46 60 78 66 116Z"/>
+    <path d="M1440 900c22-66 60-104 124-124-54 44-76 76-80 124Z"/>
+    <path d="M1540 900c-10-48-42-76-86-90 30 38 44 62 48 90Z"/>
+  </g>
+  <g>
+    <path d="M90 -20c60 60 68 130 30 186-38-50-50-110-30-186Z" fill="url(#leaf1)"/>
+    <path d="M1560 -30c64 54 74 124 40 178-42-44-54-104-40-178Z" fill="url(#leaf1)"/>
+    <path d="M180 -40c48 40 56 96 38 134-30-38-46-84-38-134Z" fill="url(#leaf2)"/>
+    <path d="M1420 -46c46 38 54 92 36 128-30-36-44-80-36-128Z" fill="url(#leaf2)"/>
+    <path d="M820 -30c12 80-10 148-70 204 6-70 22-140 70-204Z" fill="#1d5330" opacity=".9"/>
+    <ellipse cx="760" cy="120" rx="20" ry="8" fill="#2f6b3f" transform="rotate(-46 760 120)"/>
+    <ellipse cx="792" cy="60" rx="16" ry="7" fill="#2f6b3f" transform="rotate(-20 792 60)"/>
+  </g>
+</svg>

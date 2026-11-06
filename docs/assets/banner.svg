@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="400" viewBox="0 0 1600 400" role="img" aria-label="Streamio — a media center for the forest">
+  <defs>
+    <!-- forest-floor gradient -->
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c2618"/>
+      <stop offset="0.45" stop-color="#081b10"/>
+      <stop offset="1" stop-color="#040d08"/>
+    </linearGradient>
+    <!-- humid light haze -->
+    <radialGradient id="mist" cx="0.42" cy="0.58" r="0.75">
+      <stop offset="0" stop-color="#bfe8c9" stop-opacity="0.16"/>
+      <stop offset="0.55" stop-color="#9fd4ae" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#9fd4ae" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9ffe2" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#d9ffe2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="leafA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f6b3f"/>
+      <stop offset="1" stop-color="#123c22"/>
+    </linearGradient>
+    <linearGradient id="leafB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#57d183"/>
+      <stop offset="1" stop-color="#1d5330"/>
+    </linearGradient>
+    <linearGradient id="emblem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c4f2d"/>
+      <stop offset="1" stop-color="#0b2a17"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0e2b1d"/>
+      <stop offset="0.5" stop-color="#155a3a" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#0e2b1d"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="soft2" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- === BACKGROUND === -->
+  <rect width="1600" height="400" fill="url(#floor)"/>
+  <rect width="1600" height="400" fill="url(#mist)"/>
+
+  <!-- god rays -->
+  <g filter="url(#soft)">
+    <polygon points="360,0 470,0 240,400 60,400" fill="url(#ray)"/>
+    <polygon points="640,0 700,0 520,400 430,400" fill="url(#ray)"/>
+    <polygon points="1180,0 1240,0 1000,400 900,400" fill="url(#ray)" opacity="0.7"/>
+  </g>
+
+  <!-- distant trunks -->
+  <g fill="#0a2214" opacity="0.9">
+    <path d="M175 0 C 220 130 210 260 165 400 L 215 400 C 260 250 255 120 205 0 Z"/>
+    <path d="M760 0 C 790 120 780 240 740 400 L 786 400 C 828 235 822 115 795 0 Z"/>
+    <path d="M1560 0 C 1590 140 1585 280 1550 400 L 1596 400 L 1600 0 Z"/>
+  </g>
+  <g fill="#0d2a19" opacity="0.85">
+    <path d="M300 0 C 320 110 312 210 288 320 L 1088 320 C 1060 200 1064 100 1082 0 Z" opacity="0.0"/>
+    <path d="M980 40 C 1010 160 1002 280 966 400 L 1006 400 C 1044 270 1040 150 1010 40 Z"/>
+  </g>
+  <!-- a leaning limb across the mist -->
+  <path d="M0 96 C 180 70 340 64 520 78 C 700 92 845 116 940 142 L 900 152 C 790 128 640 108 470 96 C 300 84 130 88 0 112 Z" fill="#123c22" opacity="0.75"/>
+
+  <!-- damp forest floor -->
+  <path d="M0 310 C 240 292 480 288 800 296 C 1120 304 1360 300 1600 288 L 1600 400 L 0 400 Z" fill="#06130c"/>
+  <!-- the stream -->
+  <path d="M-20 340 C 260 322 520 316 780 322 C 1060 328 1300 330 1620 320 L 1620 400 L -20 400 Z" fill="url(#water)" opacity="0.9"/>
+  <!-- light catching the water -->
+  <g filter="url(#soft2)" fill="#caffe0" opacity="0.22">
+    <ellipse cx="420" cy="354" rx="130" ry="7"/>
+    <ellipse cx="960" cy="366" rx="180" ry="8"/>
+  </g>
+  <!-- wet stones -->
+  <g fill="#1b3a26">
+    <ellipse cx="250" cy="382" rx="26" ry="11"/>
+    <ellipse cx="512" cy="392" rx="34" ry="13"/>
+    <ellipse cx="880" cy="380" rx="22" ry="9"/>
+    <ellipse cx="1200" cy="390" rx="30" ry="11"/>
+    <ellipse cx="1420" cy="380" rx="18" ry="8"/>
+  </g>
+  <g fill="#2e5335" opacity="0.7">
+    <ellipse cx="498" cy="388" rx="14" ry="5"/>
+    <ellipse cx="1188" cy="386" rx="10" ry="4"/>
+  </g>
+
+  <!-- mid ferns, understory -->
+  <g fill="#0f3019">
+    <path d="M120 400 C 130 350 150 320 190 300 C 160 340 152 368 150 400 Z"/>
+    <path d="M90 400 C 80 356 56 330 20 316 C 52 352 66 376 68 400 Z"/>
+    <path d="M1350 400 C 1362 350 1386 326 1428 308 C 1392 346 1380 372 1378 400 Z"/>
+    <path d="M1552 400 C 1544 360 1520 336 1486 324 C 1514 356 1526 378 1528 400 Z"/>
+  </g>
+
+  <!-- ======== THE SIGNATURE OVERHANG: foliage passing OVER the top edge ======== -->
+  <g>
+    <g fill="url(#leafA)" filter="url(#soft2)">
+      <path d="M210 -20 C 260 30 268 86 238 128 C 210 88 200 40 210 -20 Z"/>
+      <path d="M330 -30 C 388 14 402 74 380 122 C 348 84 330 40 330 -30 Z"/>
+      <path d="M1268 -20 C 1310 22 1318 76 1298 116 C 1270 84 1256 44 1268 -20 Z"/>
+      <path d="M1392 -26 C 1438 16 1450 70 1434 116 C 1402 86 1386 46 1392 -26 Z"/>
+    </g>
+    <g fill="url(#leafB)">
+      <path d="M262 -34 C 300 6 306 52 288 84 C 264 54 254 18 262 -34 Z"/>
+      <path d="M394 -40 C 434 -6 444 40 430 74 C 406 44 388 12 394 -40 Z"/>
+      <path d="M494 -20 C 520 12 526 48 514 72 C 496 44 484 20 494 -20 Z"/>
+      <path d="M1330 -36 C 1360 -6 1368 34 1358 64 C 1338 38 1324 12 1330 -36 Z"/>
+      <path d="M1470 -44 C 1498 -14 1508 24 1498 56 C 1478 30 1462 6 1470 -44 Z"/>
+    </g>
+    <!-- a drooping vine -->
+    <path d="M600 0 C 606 56 596 104 566 148 C 578 104 580 60 574 0 Z" fill="#1d5330" opacity="0.95"/>
+    <ellipse cx="584" cy="96" rx="16" ry="7" fill="#2f6b3f" transform="rotate(-38 584 96)"/>
+    <ellipse cx="570" cy="120" rx="14" ry="6" fill="#2f6b3f" transform="rotate(-24 570 120)"/>
+    <path d="M1120 0 C 1130 44 1126 86 1104 122 C 1112 84 1112 48 1104 0 Z" fill="#1d5330" opacity="0.9"/>
+    <ellipse cx="1108" cy="80" rx="14" ry="6" fill="#2f6b3f" transform="rotate(-30 1108 80)"/>
+  </g>
+
+  <!-- ======== WORDMARK ======== -->
+  <g>
+    <!-- leaf-play emblem -->
+    <g transform="translate(716,148)">
+      <circle cx="40" cy="40" r="40" fill="url(#emblem)" stroke="#3d7a4c" stroke-opacity="0.6" stroke-width="2"/>
+      <path d="M40 8 C 55 18 61 35 55 51 C 45 44 39 30 40 8 Z" fill="#7be38b" opacity="0.9"/>
+      <path d="M34 66 C 27 58 22 50 20 40 C 27 48 31 56 34 66 Z" fill="#2f6b3f"/>
+      <circle cx="43" cy="44" r="13" fill="#12351f" filter="url(#glow)"/>
+      <path d="M39 36 L 54 44 L 39 52 Z" fill="#9ff2ab"/>
+    </g>
+    <text x="820" y="205" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-style="italic" font-weight="600" font-size="92" fill="#e7f6ea" letter-spacing="6">STREAMIO</text>
+    <text x="820" y="260" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="21" fill="#9fc7ab" letter-spacing="3">— a media center for the forest —</text>
+  </g>
+</svg>

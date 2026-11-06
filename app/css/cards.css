@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════════════════
+   STREAMIO · cards.css — poster rails, detail, addons
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── poster rails ────────────────────────────────────────── */
+.rail{
+  display:grid; grid-auto-flow:column; grid-auto-columns:max-content;
+  gap:14px; overflow-x:auto; padding:6px 2px 16px; scroll-snap-type:x proximity;
+}
+.rail::-webkit-scrollbar{height:9px}
+
+.card{
+  width:152px; scroll-snap-align:start; cursor:pointer; border-radius:14px;
+  transition:transform .18s ease, filter .18s ease;
+}
+.card:hover{transform:translateY(-5px); filter:drop-shadow(0 14px 22px rgba(0,0,0,.5))}
+.card .poster{
+  width:100%; aspect-ratio:2/3; border-radius:14px; object-fit:cover; display:block;
+  background:var(--bg-2); box-shadow:0 10px 26px rgba(0,0,0,.45), 0 0 0 1px var(--line);
+}
+.card .name{
+  margin:9px 2px 0; font-size:13px; font-weight:600; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.card .info{margin:2px 2px 0; font-size:11.5px; color:var(--text-dim)}
+.card .badge{
+  position:absolute; margin:8px; padding:2px 8px; border-radius:99px; font-size:10.5px;
+  background:rgba(5,13,8,.72); border:1px solid var(--line); color:var(--glow);
+  font-weight:800; letter-spacing:.4px; backdrop-filter:blur(6px);
+}
+.card{position:relative}
+.card .heart{
+  position:absolute; top:6px; right:6px; opacity:0; transition:.15s;
+  background:rgba(5,13,8,.66); border:1px solid var(--line); color:#ff9db4;
+  border-radius:99px; width:28px; height:28px; display:grid; place-items:center;
+  font-size:13px; cursor:pointer; backdrop-filter:blur(6px);
+}
+.card:hover .heart{opacity:1}
+.card.saved{outline:1px solid rgba(255,157,180,.5); outline-offset:-1px}
+
+/* ── browse (grid) ───────────────────────────────────────── */
+.grid{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:15px;
+  justify-content:center;
+}
+.grid .card{width:auto}
+
+/* ── detail dialog ───────────────────────────────────────── */
+#detail{padding:0; overflow:hidden; max-width:900px; width:min(95vw,900px)}
+.d-hero{position:relative; aspect-ratio:16/7; min-height:230px}
+.d-hero img.bgback{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  filter:brightness(.55) saturate(1.05);
+}
+.d-hero::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(3,9,5,.15) 0%, rgba(3,9,5,.4) 55%, var(--glass-solid) 100%);
+}
+.d-close{position:absolute; top:14px; right:14px; z-index:2}
+.d-body{position:relative; padding:0 26px 26px; margin-top:-92px; z-index:1; display:flex; gap:20px; flex-wrap:wrap}
+.d-poster{
+  width:168px; aspect-ratio:2/3; border-radius:14px; object-fit:cover;
+  box-shadow:0 18px 44px rgba(0,0,0,.65), 0 0 0 1px var(--line);
+  rotate:-2deg;
+}
+.d-info{flex:1 1 380px; min-width:300px}
+.d-tags{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0}
+.d-tags .tag{
+  font-size:11.5px; padding:4px 11px; border-radius:99px;
+  background:rgba(123,227,139,.08); border:1px solid var(--line); color:var(--text-dim);
+}
+.d-desc{line-height:1.7; color:var(--text-dim); margin:12px 0 6px; max-width:640px}
+.d-actions{display:flex; gap:10px; margin:14px 0 6px; flex-wrap:wrap}
+.streams{margin-top:16px; display:grid; gap:8px}
+.streams h3 small{color:var(--text-dim); font-family:var(--sans); font-size:11px}
+.stream{
+  display:flex; align-items:center; gap:12px; padding:11px 15px; cursor:pointer;
+  border:1px solid var(--line); border-radius:14px; background:rgba(9,26,17,.65);
+  transition:.15s; text-align:left; width:100%; color:var(--text); font:inherit;
+}
+.stream:hover{border-color:rgba(123,227,139,.45); translate:0 -2px}
+.stream .kind{
+  flex:none; font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+  padding:4px 9px; border-radius:8px; background:rgba(123,227,139,.12); color:var(--glow);
+}
+.stream .txt{min-width:0; flex:1}
+.stream .sx{font-size:9.5px; letter-spacing:.8px; text-transform:uppercase; color:rgba(123,227,139,.5); font-weight:800}
+.stream .st{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ep-list{display:grid; gap:6px; max-height:300px; overflow:auto; margin-top:10px}
+.ep{
+  display:flex; gap:12px; align-items:center; padding:10px 14px; border-radius:12px;
+  background:rgba(9,26,17,.6); border:1px solid var(--line); cursor:pointer; width:100%;
+  color:var(--text); font:inherit; text-align:inherit; transition:.15s;
+}
+.ep:hover{border-color:rgba(123,227,139,.4)}
+.ep b{color:var(--glow); font-size:12px; flex:none; width:64px}
+.season-bar{display:flex; gap:7px; flex-wrap:wrap; margin:12px 0 4px}
+
+/* ── addon manager ───────────────────────────────────────── */
+.add-row{display:flex; gap:9px; margin:16px 0}
+.add-row input{
+  flex:1; font:inherit; color:var(--text); border-radius:99px; padding:10px 16px;
+  background:rgba(6,17,11,.6); border:1px solid var(--line); outline:none;
+}
+.add-row input:focus{border-color:rgba(123,227,139,.45)}
+.addon-list{display:grid; gap:9px; margin:12px 0 14px; max-height:280px; overflow:auto}
+.addon{
+  display:flex; align-items:center; gap:13px; padding:11px 15px;
+  border:1px solid var(--line); border-radius:14px; background:rgba(9,26,17,.65);
+}
+.addon img{width:32px; height:32px; border-radius:9px; object-fit:contain; background:var(--bg-2)}
+.addon .meta{flex:1; min-width:0}
+.addon .nm{font-weight:700; font-size:14px}
+.addon .ds{font-size:11.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.addon .rm{opacity:.65}
+.addon .rm:hover{color:#ff9db4; opacity:1}
+
+/* ── continue watching progress bar ──────────────────────── */
+.pbar{height:3px; border-radius:99px; background:rgba(255,255,255,.12); margin:9px 2px 0}
+.pbar i{display:block; height:100%; border-radius:99px;
+  background:linear-gradient(90deg,var(--moss),var(--glow)); box-shadow:0 0 10px rgba(123,227,139,.6)}
+
+.empty{
+  margin:46px auto; max-width:520px; text-align:center; color:var(--text-dim); line-height:1.8;
+}
+.empty .big{font-size:44px}

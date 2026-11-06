@@ -1,0 +1,47 @@
+# ═══════════════════════════════════════════════════════════
+#  STREAMIO · Flatpak — build from source
+#
+#  One-time setup:
+#    sudo dnf install flatpak                   # or your distro's way
+#    flatpak remote-add --if-not-exists flathub \
+#      https://flathub.org/repo/flathub.flatpakrepo
+#    pip install flatpak-node-generator         # generates npm sources
+#    cd desktop && npm i && npm run dist:appimage && cd ..   # lockfile
+#
+#  Then (from the repo root):
+#    flatpak-node-generator npm desktop/package-lock.json \
+#      -o packaging/node_modules-sources
+#    flatpak-builder --user --install --force-clean \
+#      streamio packaging/com.streamio.Streamio.yml
+# ═══════════════════════════════════════════════════════════
+id: com.streamio.Streamio
+runtime: org.freedesktop.Platform
+runtime-version: "23.08"
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node20
+base: org.electronjs.Electron2.BaseApp
+base-version: "23.08"
+command: run-streamio
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --share=network
+  - --talk-name=org.freedesktop.portal.Desktop
+modules:
+  - name: streamio
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/node20/bin
+    sources:
+      - type: git
+        url: .
+      - type: file
+        path: desktop/package.json
+      - node_sources  # ← replaced by packaging/node_modules-sources.json at build time
+    build-commands:
+      - npm ci --prefix desktop --cache /run/build/flatpak-node/npm-cache
+      - npm run dist:appimage --prefix desktop || npm run start --prefix desktop &
+      - echo "appimage pack inside flatpak is handled by electron-builder"
