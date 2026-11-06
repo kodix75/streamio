@@ -2,7 +2,7 @@
    STREAMIO · main.js — routes, nav, addons, delegation
    ═══════════════════════════════════════════════════════════ */
 import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js?v=4";
-import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl } from "./api.js?v=4";
+import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl, addonCollection } from "./api.js?v=4";
 import { toggleSaved } from "./library.js?v=4";
 import * as player from "./player.js?v=4";
 
@@ -110,6 +110,7 @@ $("#addonsBtn").onclick = () => {
     }catch(e){ $("#backendStatus").textContent = `✗ offline (${e.message})` }
   };}
   renderSuggested();
+  renderCommunity();
   renderAddonList(); dlg.showModal() 
 };
 $("#addonAdd").onclick = doPlant;
@@ -153,6 +154,41 @@ function renderSuggested(){
         setAddonUrls([...addonUrls(), u]);
         b.textContent = `🌿 ${m.name}`;
         renderAddonList(); renderSuggested();
+      }catch(err){ b.textContent = "didn't sprout 🍂" }
+    }
+  });
+}
+
+async function renderCommunity(){
+  const box = $("#communityAddons"); if (!box) return;
+  const status = $("#communityStatus");
+  if (status) status.textContent = "loading the collection…";
+  box.innerHTML = `<div class="muted small" style="padding:8px">loading…</div>`;
+  let list = [];
+  try{ list = await addonCollection() }catch(e){ list = [] }
+  if (!list.length){ if (status) status.textContent = "couldn't reach the collection (offline?)"; box.innerHTML = ""; return }
+  const planted = addonUrls();
+  box.innerHTML = list.map(a => `
+    <div class="addon">
+      ${a.logo ? `<img src="${esc(a.logo)}" onerror="this.style.display='none'"/>` : `<img src="assets/logo.svg"/>`}
+      <div class="meta"><div class="nm">${esc(a.name)}</div>
+        <div class="ds">${esc(a.description || (a.types||[]).join(", "))}</div></div>
+      <button class="icon-btn ${planted.includes(a.url) ? "rm" : ""}" data-com="${esc(a.url)}">
+        ${planted.includes(a.url) ? "unplant 🍂" : "plant 🌱"}</button>
+    </div>`).join("");
+  if (status) status.textContent = `${list.length} addons available`;
+  $$("#communityAddons [data-com]").forEach(b => b.onclick = async () => {
+    const u = b.dataset.com;
+    if (addonUrls().includes(u)){
+      setAddonUrls(addonUrls().filter(x => x !== u));
+      renderAddonList(); renderCommunity(); renderSuggested();
+    } else {
+      b.textContent = "planting…";
+      try{
+        const m = await loadManifest(u);
+        setAddonUrls([...addonUrls(), u]);
+        b.textContent = `🌿 ${m.name}`;
+        renderAddonList(); renderCommunity(); renderSuggested();
       }catch(err){ b.textContent = "didn't sprout 🍂" }
     }
   });

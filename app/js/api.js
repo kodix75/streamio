@@ -239,6 +239,20 @@ export async function backendPlay(magnet){
   const d = await r.json();
   return { ...d, streamUrl: `${backendUrl()}${d.streamUrl}` };
 }
+/* ── official community addons collection (strem.io) ─────── */
+export async function addonCollection(){
+  const d = await jget("https://api.strem.io/addonscollection.json").catch(() => []);
+  const list = Array.isArray(d) ? d : (d?.addons ?? []);
+  return list.map(a => ({
+    name: a.manifest?.name || a.name || "addon",
+    description: a.manifest?.description || "",
+    logo: a.manifest?.logo || a.manifest?.icon,
+    url: a.transportUrl,
+    types: a.manifest?.types || [],
+    catalogs: (a.manifest?.catalogs || []).length,
+  })).filter(a => a.url);
+}
+
 export const SEEDS = [
   {
     name: "Torrentio", url: "https://torrentio.strem.fun/manifest.json",
