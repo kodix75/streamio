@@ -89,6 +89,17 @@
         <button id="debridPlant" class="btn">plant it</button>
       </div>
     </details>
+    <details class="debrid-box">
+      <summary>⚙️ playback engine — local backend for torrents (any film)</summary>
+      <p class="muted small">Run <code>cd server && npm install && npm start</code> (Node 18+) to turn any magnet into
+        an HTTP stream with seeking. Point Streamio at it below. Falls back to in-browser WebTorrent if offline.</p>
+      <div class="add-row">
+        <input id="backendUrl" type="url" placeholder="http://127.0.0.1:7000"/>
+        <button id="backendTest" class="btn ghost">test</button>
+        <button id="backendSave" class="btn">save</button>
+      </div>
+      <p id="backendStatus" class="muted small"></p>
+    </details>
     <p class="muted small">Streamio ships with a built-in <b>public domain cinema</b> rail (Internet Archive mp4s) that
       play directly in the browser — no peers, no debrid, no account. 🍄</p>
   </dialog>

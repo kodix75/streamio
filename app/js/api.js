@@ -218,6 +218,27 @@ export async function archiveSearch(q, limit = 12){
   }));
   return checks.filter(Boolean).slice(0, limit);
 }
+/* ── local backend (torrents -> HTTP streams) ───────────── */
+const LS_BACKEND = "streamio.backendUrl";
+export function backendUrl(){ return (localStorage.getItem(LS_BACKEND) || "http://127.0.0.1:7000").replace(/\/+$/, "") }
+export function setBackendUrl(u){ localStorage.setItem(LS_BACKEND, u.trim()) }
+export async function backendAvailable(){
+  try{
+    const r = await fetch(`${backendUrl()}/health`, { method: "GET", signal: AbortSignal.timeout(1500) });
+    return r.ok;
+  }catch(e){ return false }
+}
+export async function backendPlay(magnet){
+  const r = await fetch(`${backendUrl()}/play`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ magnet }),
+    signal: AbortSignal.timeout(120000),
+  });
+  if (!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(e.error || r.status) }
+  const d = await r.json();
+  return { ...d, streamUrl: `${backendUrl()}${d.streamUrl}` };
+}
 export const SEEDS = [
   {
     name: "Torrentio", url: "https://torrentio.strem.fun/manifest.json",

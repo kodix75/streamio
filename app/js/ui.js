@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch } from "./api.js";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl } from "./api.js";
 import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js";
 import { open as openPlayer } from "./player.js";
 
@@ -352,9 +352,25 @@ async function paintStreams(zone, type, id, title, refMeta){
 }
 
 export function wireStreams(box){
-  $$(".stream", box).forEach(b => b.onclick = () => {
+  $$(".stream", box).forEach(b => b.onclick = async () => {
     if (b.dataset.kind === "external"){ window.open(b.dataset.src, "_blank"); return }
     if (!b.dataset.src && b.dataset.kind !== "yt") return;
+    // torrents: prefer the local backend (real BitTorrent peers) when available
+    if (b.dataset.kind === "torrent" && (await backendAvailable().catch(()=>false))){
+      const btn = b;
+      const orig = btn.innerHTML;
+      btn.style.opacity = ".6"; btn.style.pointerEvents = "none";
+      try{
+        const info = await backendPlay(b.dataset.src);
+        openPlayer({ kind: "file", src: info.streamUrl, ref: b.dataset.ref, title: b.dataset.title });
+      }catch(e){
+        console.warn("backend play failed, falling back to webtorrent", e);
+        openPlayer({ kind: "torrent", src: b.dataset.src, ref: b.dataset.ref, title: b.dataset.title });
+      }finally{
+        btn.style.opacity = ""; btn.style.pointerEvents = "";
+      }
+      return;
+    }
     openPlayer({
       kind: b.dataset.kind,
       src: b.dataset.src,

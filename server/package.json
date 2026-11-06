@@ -1,0 +1,16 @@
+{
+  "name": "streamio-backend",
+  "version": "0.4.0",
+  "description": "Tiny local streaming server for Streamio — turns torrents into HTTP streams (range-supported) so any film plays in the browser.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "torrent-stream": "^1.2.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

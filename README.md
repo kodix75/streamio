@@ -79,7 +79,22 @@ npm i && npm start          # 🌲 dev window
 npm run dist                # 📦 Streamio-0.1.0.AppImage + .deb in out/
 ```
 
-### ▸ flatpak
+### ▸ play *any* torrent (local backend — optional, recommended)
+
+Torrents need a native engine to play reliably in a browser. Streamio ships a tiny one:
+
+```bash
+cd streamio/server
+npm install            # one time
+npm start              # 🌿 http://127.0.0.1:7000
+```
+
+Then open Streamio → **addons** → **playback engine** and test the connection. Torrent rows will now play as direct
+HTTP streams with seeking. Without it, Streamio falls back to in-browser WebTorrent (needs webRTC peers) or your debrid account.
+
+### ▸ debrid (no backend needed)
+
+Paste a Real-Debrid / AllDebrid API key in **addons → debrid** and Torrentio streams arrive as direct files.
 
 The scaffold lives at [`packaging/com.streamio.Streamio.yml`](packaging/com.streamio.Streamio.yml)
 with build steps in its header comments — **PRs welcome**, the flatpack-forest needs a gardener. 🪴
@@ -129,6 +144,7 @@ Write your own in 20 minutes with the [addon SDK](https://github.com/Stremio/str
 
 ```
 streamio/
+├── server/                      # optional node backend: torrents -> HTTP streams (range)
 ├── app/                        # the whole web app (no build step!)
 │   ├── index.html              #   shell — menu, dialogs, routes
 │   ├── css/  theme·menu·cards  #   forest glass, canopy, rails

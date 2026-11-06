@@ -2,7 +2,7 @@
    STREAMIO · main.js — routes, nav, addons, delegation
    ═══════════════════════════════════════════════════════════ */
 import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js";
-import { addonUrls, setAddonUrls, loadManifest, SEEDS } from "./api.js";
+import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl } from "./api.js";
 import { toggleSaved } from "./library.js";
 import * as player from "./player.js";
 
@@ -89,7 +89,10 @@ document.addEventListener("keydown", (e) => {
 
 /* ── addons drawer ───────────────────────────────────────── */
 const dlg = $("#addons");
-$("#addonsBtn").onclick = () => { renderAddonList(); dlg.showModal() };
+$("#addonsBtn").onclick = () => { 
+  const bu = $("#backendUrl"); if (bu && !bu.value) bu.value = backendUrl();
+  renderAddonList(); dlg.showModal() 
+};
 $("#addonAdd").onclick = doPlant;
 $("#addonUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") doPlant() });
 
@@ -112,6 +115,25 @@ if (debridPlantBtn) debridPlantBtn.onclick = async () => {
     $("#debridKey").placeholder = "that key didn't sprout — check it";
   }
   setTimeout(() => $("#debridKey").placeholder = "paste your API key…", 2600);
+};
+
+/* playback engine test/save */
+const backendSaveBtn = $("#backendSave");
+if (backendSaveBtn) backendSaveBtn.onclick = () => {
+  const u = $("#backendUrl").value.trim() || "http://127.0.0.1:7000";
+  setBackendUrl(u);
+  $("#backendStatus").textContent = `saved: ${u} 🌿`;
+};
+const backendTestBtn = $("#backendTest");
+if (backendTestBtn) backendTestBtn.onclick = async () => {
+  const u = $("#backendUrl").value.trim() || backendUrl();
+  setBackendUrl(u);
+  $("#backendStatus").textContent = "testing…";
+  try{
+    const r = await fetch(`${u}/health`, { signal: AbortSignal.timeout(2000) });
+    const d = await r.json();
+    $("#backendStatus").textContent = r.ok ? `✓ connected — ${d.service || "ok"} (${d.sessions ?? 0} sessions)` : `✗ ${r.status}`;
+  }catch(e){ $("#backendStatus").textContent = `✗ offline (${e.message})` }
 };
 
 async function doPlant(){
