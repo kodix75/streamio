@@ -125,6 +125,11 @@ const SUGGESTED = [
   { name: "TMDB", url: "https://tmdb.strem.io/manifest.json" },
   { name: "WatchHub", url: "https://watchhub.strem.io/manifest.json" },
   { name: "YouTube", url: "https://youtube.strem.io/manifest.json" },
+  { name: "RARBG", url: "https://rarbg.strem.io/manifest.json" },
+  { name: "1337x", url: "https://1337x.strem.io/manifest.json" },
+  { name: "HorribleSubs (anime)", url: "https://horriblesubs.strem.io/manifest.json" },
+  { name: "IMDb List", url: "https://imdb-list.strem.io/manifest.json" },
+  { name: "Top Movies", url: "https://top-movies.strem.io/manifest.json" },
 ];
 function renderSuggested(){
   const box = $("#suggestedAddons"); if (!box) return;
