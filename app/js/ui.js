@@ -1,13 +1,13 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamTitle, streamSource, addonUrls } from "./api.js";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls } from "./api.js";
 import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js";
 import { open as openPlayer } from "./player.js";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const ph = (name) => "data:image/svg+xml," + encodeURIComponent(
   `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='300'><rect width='200' height='300' fill='#0a2317'/>` +
   `<text x='100' y='150' fill='${"#3f8a52"}' text-anchor='middle' font-family='Georgia' font-style='italic' font-size='15'>${esc(name && name.slice(0, 16) || "…")}</text></svg>`);
@@ -38,12 +38,18 @@ const skelCards = (n) => Array(n).fill(
 const emptyState = (msg, extra = "") =>
   `<div class="empty"><div class="big">🦌</div><p>${msg}</p>${extra}</div>`;
 
-const railSection = (title, cards, link = "") => `
-  <section><div class="row-head"><div class="row-title"><h2>${esc(title)}</h2></div>
+const railSection = (title, cards, link = "", kicker = "") => `
+  <section><div class="row-head"><div class="row-title"><h2>${esc(title)}</h2>
+  ${kicker ? `<span class="row-kicker">${esc(kicker)}</span>` : ""}</div>
   ${link ? `<a class="chip" href="${link}">see all →</a>` : ""}</div>
-  <div class="rail">${cards}</div></section>`;
+  <div class="rail-w">
+    <span class="thread" aria-hidden="true"></span>
+    <button class="rail-nav" data-dir="prev" title="back">‹</button>
+    <div class="rail">${cards}</div>
+    <button class="rail-nav" data-dir="next" title="more">›</button>
+  </div></section>`;
 
-/* ── hero ────────────────────────────────────────────────── */
+/* ── hero — the night's glowing checkpoint ───────────────── */
 async function heroMovie(){
   const metas = await cinemetaCatalog("movie").catch(() => []);
   const withPoster = metas.filter(m => m.poster);
@@ -51,45 +57,69 @@ async function heroMovie(){
   const pick = withPoster[Math.floor(Math.random() * Math.min(24, withPoster.length))];
   const full = await meta("movie", pick.id).catch(() => ({ ...pick, type: "movie" }));
   const yt = full.trailer?.startsWith("yt:") ? full.trailer : null;
-  return `<section class="hero"><div class="hero-inner">
-    <img class="hero-poster" src="${esc(full.poster)}" onerror="this.style.visibility='hidden'"/>
-    <div class="hero-meta">
-      <div class="hero-sub" style="font-family:var(--serif);font-style:italic;font-size:17px;color:var(--moss);font-size:18px;margin:0 0 -22px">— tonight in the forest</div>
-      <div class="hero-title">${esc(full.name)}</div>
-      <div>
-        ${full.imdbRating ? `<span class="rating">${star} ${esc(full.imdbRating)}</span> ` : ""}
-        ${full.releaseInfo ? `<span class="muted small">${esc(full.releaseInfo)}</span>` : ""}
+  const genres = Array.isArray(full.genre) ? full.genre.slice(0, 3) : [];
+  const kv = [
+    full.imdbRating ? ["story", `<span class="rating">${star} ${esc(full.imdbRating)}</span>`] : null,
+    full.releaseInfo ? ["dawn", esc(full.releaseInfo)] : null,
+    genres.length ? ["grove", esc(genres.join(" · "))] : null,
+    full.runtime ? ["trail", esc(full.runtime)] : null,
+  ].filter(Boolean);
+  return `<section class="hero">
+    <div class="hero-inner">
+      <div class="orb-wrap">
+        <svg class="orb-dial" viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="r-ticks" cx="120" cy="120" r="112"/>
+          <circle class="r-thin" cx="120" cy="120" r="103"/>
+          <circle class="r-arc"  cx="120" cy="120" r="97"/>
+          <circle class="r-arc2" cx="120" cy="120" r="88"/>
+        </svg>
+        <img class="hero-poster" src="${esc(full.poster)}" onerror="this.style.visibility='hidden'"/>
+        <span class="orb-cap">tonight · streamio</span>
       </div>
-      <p class="hero-sub">${esc(full.description)}</p>
-      <div class="hero-actions">
-        ${yt ? `<button class="btn" data-trailer="${esc(yt)}" data-tname="${esc(full.name)}">▶ watch trailer</button>` : ""}
-        <a class="btn ghost" href="#/detail/${esc(full.type ?? "movie")}/${esc(full.id)}">🌴 where to watch</a>
+      <div class="hero-meta">
+        <div class="hero-kicker">— tonight in the forest</div>
+        <div class="hero-title">${esc(full.name)}</div>
+        <dl class="kv">${kv.map(([k, v]) =>
+          `<div class="kv-row"><dt class="kv-k">${k}</dt><dd class="kv-v">${v}</dd></div>`).join("")}</dl>
+        <p class="hero-sub">${esc(full.description)}</p>
+        <div class="hero-actions">
+          ${yt ? `<button class="orb-action primary" data-trailer="${esc(yt)}" data-tname="${esc(full.name)}">
+                    <i class="oa-ic">▶</i><span class="oa-txt"><b>watch trailer</b><small>youtube · the fireflies glow</small></span></button>` : ""}
+          <a class="orb-action" href="#/detail/${esc(full.type ?? "movie")}/${esc(full.id)}">
+                    <i class="oa-ic">🌳</i><span class="oa-txt"><b>where to watch</b><small>every grove · all the sources</small></span></a>
+        </div>
       </div>
-    </div></div></section>`;
+    </div></section>`;
 }
 
 /* ── home ────────────────────────────────────────────────── */
 export async function homeView(root){
+  /* nav token: if the user clicks a link while we're fetching (all the
+     Promise.all below is slow), our late paint would overwrite the new
+     view — bail out instead. this is the "catalogue didn't open" bug. */
+  const nav = root.dataset.nav;
   root.innerHTML = `<div style="margin-top:96px">${railSection("the forest is waking…", skelCards(8))}</div>`;
   const hero = await heroMovie();
+  if (root.dataset.nav !== nav) return;
   const [movies, series, cont, addonCats] = await Promise.all([
     cinemetaCatalog("movie").catch(() => []),
     cinemetaCatalog("series").catch(() => []),
     Promise.resolve(continueWatching()),
     addonCatalogs().catch(() => []),
   ]);
+  if (root.dataset.nav !== nav) return;
   root.innerHTML = hero
     + (cont.length
         ? railSection("continue watching", cont.map(x =>
             posterCard({ id: x.imdb, name: x.name, type: x.type ?? "movie", poster: x.poster },
                        { progressPct: (x.t / Math.max(1, x.d)) * 100 })).join(""), "#/library")
         : "")
-    + railSection("trending movies", movies.map(m => posterCard({ ...m, type:"movie" })).join(""), "#/browse/movie")
-    + railSection("trending series", series.map(m => posterCard({ ...m, type:"series" })).join(""), "#/browse/series")
+    + railSection("trending movies", movies.map(m => posterCard({ ...m, type:"movie" })).join(""), "#/browse/movie", "cinemeta · top")
+    + railSection("trending series", series.map(m => posterCard({ ...m, type:"series" })).join(""), "#/browse/series", "cinemeta · top")
     + addonCats.map((c, i) => `
       <section><div class="row-head"><div class="row-title"><h2>${esc(c.name)}</h2></div>
-      <span class="muted small">from ${esc(c.addon.name)}</span></div>
-      <div class="rail" id="addonRail${i}">${skelCards(6)}</div></section>`);
+      <span class="row-kicker">from the addon ${esc(c.addon.name)}</span></div>
+      <div class="rail-w"><span class="thread" aria-hidden="true"></span><div class="rail" id="addonRail${i}">${skelCards(6)}</div></div></section>`);
 
   /* fill each addon rail once its own catalog answers */
   await Promise.all(addonCats.map(async (c, i) => {
@@ -97,6 +127,7 @@ export async function homeView(root){
     if (!rail) return;
     try{
       const ms = await c.fetch();
+      if (root.dataset.nav !== nav) return;
       rail.innerHTML = ms.slice(0, 18).map(m => posterCard({ ...m, type: c.type })).join("")
         || emptyState("this addon-stand sells nothing today");
       rail.id = ""; /* avoid re-lookup collisions on hash changes */
@@ -108,6 +139,7 @@ export async function homeView(root){
 const GENRES = ["", "action", "adventure", "animation", "comedy", "drama", "science-fiction", "documentary", "romance", "thriller"];
 
 export async function browseView(root, type, genre = ""){
+  const nav = root.dataset.nav;
   root.dataset.type = type;
   root.innerHTML = `
     <h1 style="margin-top:108px">the ${type === "movie" ? "movie grove" : "series grove"}${genre ? `<span class="muted" style="font-size:.55em"> · ${esc(genre)}</span>` : ""}</h1>
@@ -116,6 +148,7 @@ export async function browseView(root, type, genre = ""){
     <div class="grid">${skelCards(14)}</div>`;
   wireGenre(root, type);
   const items = await cinemetaCatalog(type, genre ? `genre=${encodeURIComponent(genre)}` : "").catch(() => []);
+  if (root.dataset.nav !== nav) return;
   $(".grid", root).innerHTML = items.map(m => posterCard({ ...m, type })).join("")
     || emptyState("nothing grew here yet 🌱");
 }
@@ -127,6 +160,7 @@ function wireGenre(root, type){
 }
 
 export async function searchView(root, q){
+  const nav = root.dataset.nav;
   root.innerHTML = `<h1 style="margin-top:108px">searching for “${esc(q)}” 🦋</h1>
     <div class="grid">${skelCards(10)}</div>`;
   const extra = `search=${encodeURIComponent(q)}`;
@@ -134,6 +168,7 @@ export async function searchView(root, q){
     cinemetaCatalog("movie", extra).catch(() => []),
     cinemetaCatalog("series", extra).catch(() => []),
   ]);
+  if (root.dataset.nav !== nav) return;
   const all = [...mv, ...sr];
   root.innerHTML = `<h1 style="margin-top:108px">“${esc(q)}” in the wild</h1>
     <div class="grid">${all.map(m => posterCard(m)).join("")}</div>`
@@ -143,12 +178,35 @@ export async function searchView(root, q){
 export async function libraryView(root){
   const saved = savedItems();
   const cont = continueWatching(40);
-  root.innerHTML = `<h1 style="margin-top:108px">your library</h1>`
+  const films = saved.filter(s => (s.type ?? "movie") === "movie").length;
+  const shows = saved.length - films;
+  root.innerHTML = `
+    <div class="map-head">
+      <div>
+        <div class="row-kicker">library · the forest remembers</div>
+        <h1 class="map-title">map of your grove</h1>
+      </div>
+      <div class="map-coord">${saved.length} seeds planted<br>
+        <span>${films} films · ${shows} series · drawn by streamio 🕯</span></div>
+    </div>`
     + (cont.length ? railSection("continue watching", cont.map(x =>
         posterCard({ id: x.imdb, name: x.name, type: x.type ?? "movie", poster: x.poster },
                    { progressPct: (x.t / Math.max(1, x.d)) * 100 })).join("")) : "")
-    + `<section><div class="row-head"><div class="row-title"><h2>saved for later 🍄</h2></div></div>
-        <div class="grid">${saved.length ? saved.map(m => posterCard(m)).join("") : ""}</div></section>`
+    + `<section><div class="row-head"><div class="row-title"><h2>planted in your clearing</h2></div>
+        <span class="row-kicker">saved for later 🍄</span></div>
+       <div class="poi-map">
+         <svg class="poi-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+           <path d="M2,64 C22,16 40,88 62,44 C74,22 84,60 99,36"/>
+           <path d="M0,82 C26,94 58,58 100,74"/>
+           <path d="M6,30 C30,10 62,20 96,12"/>
+         </svg>
+         ${saved.length ? saved.map((m, i) => `
+           <button class="card poi" data-id="${esc(m.id)}" data-type="${esc(m.type ?? "movie")}"
+                   style="--sz:${92 + (i % 4) * 18}px;translate:${(i % 3) * 8 - 8}px ${(i % 2) * 10 - 8}px">
+             <img class="poi-img" src="${esc(m.poster || ph(m.name))}" onerror="this.onerror=null;this.src='${ph(m.name)}'"/>
+             <span class="poi-cap">${esc(m.name)}</span>
+           </button>`).join("") : ""}
+       </div></section>`
     + (!saved.length ? emptyState("your library is an empty clearing — press ♡ on any poster to plant it here",
         `<a class="btn" href="#/browse/movie" style="margin-top:10px">go plant some 🌱</a>`) : "");
 }
@@ -257,14 +315,18 @@ async function paintStreams(zone, type, id, title, refMeta){
   }
   const kindLabel = { file:"file", hls:"hls", torrent:"torrent", yt:"youtube", external:"link", unknown:"?" };
   zone.innerHTML = `<div class="row-head" style="margin:18px 0 10px"><div class="row-title"><h2>streams</h2></div>
-      <span class="muted small">${list.length} gossamer threads</span></div>
-    <div class="streams">${list.map(s => {
+      <span class="row-kicker">${list.length} gossamer threads · seeds first</span></div>
+    <div class="streams">${list.map((s, i) => {
       const k = classify(s);
       const magnet = k === "torrent" ? (s.url ?? `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(title)}`) : "";
       const src = k === "external" ? (s.externalUrl ?? "") : (s.url ?? s.ytId ?? magnet);
-      return `<button class="stream" data-kind="${k}" data-src="${esc(src)}" data-title="${esc(streamTitle(s))}" data-ref="${esc(id)}">
+      const pills = streamPills(s, id);
+      return `<button class="stream ${i === 0 ? "best" : ""}" data-kind="${k}" data-src="${esc(src)}" data-title="${esc(streamTitle(s))}" data-ref="${esc(id)}">
         <span class="kind">${kindLabel[k]}</span>
-        <span class="txt"><div class="sx">${esc(streamSource(s))}</div><div class="st">${esc(streamTitle(s))}</div></span>
+        <span class="txt"><div class="sx">${esc(streamSource(s))}</div><div class="st">${esc(streamTitle(s))}</div>
+          ${pills.length ? `<div class="pills">${pills.map(p => `<b class="${/p$|hdr|dv|vision/i.test(p) ? "q" : ""}">${esc(p)}</b>`).join("")}</div>` : ""}
+        </span>
+        ${i === 0 ? `<span class="best-flag">quick trail</span>` : ""}
       </button>`;
     }).join("")}</div>`;
   wireStreams(zone);

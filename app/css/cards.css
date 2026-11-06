@@ -10,7 +10,7 @@
 .rail::-webkit-scrollbar{height:9px}
 
 .card{
-  width:152px; scroll-snap-align:start; cursor:pointer; border-radius:14px;
+  width:var(--card-w,152px); scroll-snap-align:start; cursor:pointer; border-radius:14px;
   transition:transform .18s ease, filter .18s ease;
 }
 .card:hover{transform:translateY(-5px); filter:drop-shadow(0 14px 22px rgba(0,0,0,.5))}
@@ -40,7 +40,7 @@
 
 /* ── browse (grid) ───────────────────────────────────────── */
 .grid{
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:15px;
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(calc(var(--card-w,152px) - 4px),1fr)); gap:15px;
   justify-content:center;
 }
 .grid .card{width:auto}
@@ -124,3 +124,138 @@
   margin:46px auto; max-width:520px; text-align:center; color:var(--text-dim); line-height:1.8;
 }
 .empty .big{font-size:44px}
+
+/* ═══════════════════════════════════════════════════════════
+   THEME STUDIO — swatches, switches, footers
+   ═══════════════════════════════════════════════════════════ */
+.set-h{font-size:16px; margin:22px 0 9px; color:var(--text)}
+.set-h::before{content:"· "; color:var(--glow)}
+
+.swatches{display:flex; gap:10px; flex-wrap:wrap}
+.swatch{
+  width:74px; height:74px; border-radius:14px; cursor:pointer; position:relative;
+  border:1px solid var(--line); overflow:hidden; transition:transform .15s ease, box-shadow .15s;
+  padding:0; background:none;
+}
+.swatch:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.swatch.on{outline:2px solid var(--text); outline-offset:2px}
+.swatch i{position:absolute; inset:0}
+.swatch span{
+  position:absolute; bottom:0; left:0; right:0; font-size:9px; font-weight:700; letter-spacing:.4px;
+  background:rgba(0,0,0,.55); color:#fff; padding:3px 2px; line-height:1.2;
+}
+.accent-swatch{width:30px; height:30px; border-radius:99px; border:1px solid rgba(0,0,0,.3)}
+
+.toggles{display:flex; gap:22px; flex-wrap:wrap; padding:4px 0}
+.switch{display:inline-flex; gap:9px; align-items:center; cursor:pointer; font-size:13.5px}
+.switch input{
+  appearance:none; -webkit-appearance:none; width:38px; height:21px; border-radius:99px;
+  background:rgba(255,255,255,.08); border:1px solid var(--line); position:relative;
+  transition:.2s; cursor:pointer; flex:none;
+}
+.switch input::before{
+  content:""; position:absolute; width:15px; height:15px; border-radius:99px;
+  background:#5c7a68; top:2px; left:2px; transition:.2s;
+}
+.switch input:checked{background:color-mix(in oklab, var(--glow) 30%, transparent)}
+.switch input:checked::before{left:19px; background:var(--glow); box-shadow:0 0 10px var(--glow)}
+
+.dlg-foot{display:flex; align-items:center; margin-top:10px}
+
+/* ═══════════════════════════════════════════════════════════
+   RAIL ARROWS + follow-glow + pills + fade-in
+   ═══════════════════════════════════════════════════════════ */
+.rail-w{position:relative}
+.rail-nav{
+  position:absolute; top:50%; translate:0 -50%; z-index:4;
+  width:34px; height:34px; border-radius:99px; border:1px solid var(--line);
+  background:rgba(5,13,8,.8); color:var(--text); font-size:15px; cursor:pointer;
+  display:grid; place-items:center; opacity:0; transition:opacity .2s, translate .2s;
+  backdrop-filter:blur(8px);
+}
+.rail-nav[data-dir="next"]{right:-10px}
+.rail-nav[data-dir="prev"]{left:-10px}
+.rail-w:hover .rail-nav{opacity:1}
+.rail-nav:hover{border-color:var(--glow); color:var(--glow)}
+.rail-w::after{content:""; position:absolute; right:0; top:0; bottom:16px; width:52px; z-index:2;
+  background:linear-gradient(90deg, transparent, var(--bg-1) 92%); pointer-events:none;
+  mask:linear-gradient(180deg,#000 60%, transparent); opacity:0; transition:opacity .2s}
+.rail-w:hover::after{opacity:.75}
+
+/* mouse-follow glow on posters — set --gx/--gy from JS */
+.card::after{
+  content:""; position:absolute; inset:0; border-radius:14px; z-index:2; pointer-events:none;
+  background:radial-gradient(110px 110px at var(--gx,50%) var(--gy,50%),
+    color-mix(in oklab, var(--glow) 22%, transparent), transparent 62%);
+  opacity:0; transition:opacity .25s;
+}
+.card:hover::after{opacity:1}
+.card:hover .poster{
+  box-shadow:0 16px 34px rgba(0,0,0,.55), 0 0 0 1px color-mix(in oklab, var(--glow) 45%, transparent);
+}
+
+/* stream quality pills */
+.pills{display:flex; gap:6px; margin-top:5px; flex-wrap:wrap}
+.pills b{
+  font-size:9.5px; font-weight:800; letter-spacing:.4px; padding:2px 8px; border-radius:7px;
+  background:rgba(255,255,255,.055); border:1px solid var(--line); color:var(--text-dim);
+}
+.pills b.q{  /* resolution pill lights up */
+  color:var(--glow); background:color-mix(in oklab, var(--glow) 12%, transparent);
+  border-color:color-mix(in oklab, var(--glow) 35%, transparent);
+}
+
+/* ── RAIL THREAD + NODES (connects posters like a skill tree) ── */
+.rail-w{position:relative; padding:6px 0 14px}
+.rail-w::before{content:""; position:absolute; left:10px; right:10px; top:44%; height:1px; z-index:0;
+  background:linear-gradient(90deg, transparent, var(--line) 10%, var(--line) 90%, transparent)}
+.thread{position:absolute; left:10px; right:10px; top:44%; height:1px; z-index:0; pointer-events:none;
+  background:linear-gradient(90deg, transparent, var(--line) 8%, var(--line) 92%, transparent)}
+.thread::before,.thread::after{content:""; position:absolute; top:-3px; width:7px; height:7px; rotate:45deg;
+  background:var(--moss); opacity:.7; box-shadow:0 0 10px var(--moss)}
+.thread::before{left:0}.thread::after{right:0}
+.rail{position:relative; z-index:1}
+.rail-w .rail-nav{backdrop-filter:blur(var(--glass-b,8px))}
+
+/* ── best trail highlight on first stream ─────────────────── */
+.stream.best{border-color:color-mix(in oklab, var(--glow) 38%, var(--line));
+  background:linear-gradient(115deg, color-mix(in oklab, var(--glow) 10%, transparent), transparent 48%), rgba(9,26,17,.65)}
+.stream.best:hover{border-color:color-mix(in oklab, var(--glow) 52%, var(--line))}
+.best-flag{flex:none; font:800 9px/1 var(--sans); letter-spacing:.26em; text-transform:uppercase;
+  color:var(--glow); border:1px dashed color-mix(in oklab, var(--glow) 45%, var(--line));
+  border-radius:999px; padding:5px 9px; opacity:.9}
+
+/* ── LIBRARY MAP — POI bubbles + legend ──────────────────── */
+.map-head{margin-top:106px; display:flex; align-items:flex-end; justify-content:space-between; gap:18px;
+  border-bottom:1px solid var(--line); padding-bottom:16px}
+.map-title{font-size:clamp(30px,4vw,44px); margin:0 0 2px}
+.map-coord{text-align:right; font:800 10px/1.8 var(--sans); letter-spacing:.3em; text-transform:uppercase; color:var(--moss)}
+.map-coord span{color:var(--text-dim); font-weight:600; letter-spacing:.18em}
+.poi-map{position:relative; display:flex; flex-wrap:wrap; gap:30px 34px; align-items:flex-start;
+  padding:30px 10px 8px; min-height:180px}
+.poi-lines{position:absolute; inset:0; width:100%; height:100%; stroke:var(--line); stroke-width:.5; fill:none;
+  stroke-dasharray:3 4; opacity:.75; pointer-events:none}
+.card.poi{width:auto; outline:none !important; border:none; background:none; padding:0; filter:none}
+.card.poi::after{display:none}
+.poi{border:none; background:none; padding:0; cursor:pointer; text-align:center; filter:none; transition:transform .18s ease}
+.poi:hover{transform:translateY(-4px)}
+.poi-img{width:var(--sz,96px); aspect-ratio:1; border-radius:999px; object-fit:cover; display:block;
+  box-shadow:0 0 0 1px var(--line), 0 14px 32px rgba(0,0,0,.55),
+             0 0 0 7px color-mix(in oklab, var(--bg-2) 90%, transparent)}
+.poi::before{content:""; position:absolute; inset:-7px; border-radius:999px;
+  border:1px dashed color-mix(in oklab, var(--glow) 40%, var(--line)); opacity:0; transition:.2s;
+  animation:spin 14s linear infinite}
+.poi:hover::before{opacity:1}
+.poi-cap{display:block; margin-top:9px; max-width:calc(var(--sz,96px) * 1.2); font-size:12px; font-weight:600;
+  color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.poi:hover .poi-cap{color:var(--glow)}
+
+/* ── THEME STUDIO — sliders + segmented font buttons ──────── */
+.sliders{display:flex; flex-direction:column; gap:12px; margin:12px 0 6px}
+.range{display:flex; align-items:center; gap:12px; font-size:12px; color:var(--text-dim)}
+.range span{width:92px; flex:none; font-weight:800; font-size:10px; letter-spacing:.22em; text-transform:uppercase}
+.range input{flex:1; accent-color:var(--glow); height:22px}
+.range output{width:52px; text-align:right; font-weight:800; color:var(--text); font-size:11.5px}
+.seg-row{display:flex; align-items:center; gap:9px; margin-top:8px; flex-wrap:wrap;
+  font-weight:800; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--text-dim)}
+.seg-row .chip{padding:6px 13px; font-size:12px; letter-spacing:0; text-transform:none}

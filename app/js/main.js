@@ -1,19 +1,24 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · main.js — routes, nav, addons, delegation
    ═══════════════════════════════════════════════════════════ */
-import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams } from "./ui.js";
-import { addonUrls, setAddonUrls, loadManifest } from "./api.js";
+import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js";
+import { addonUrls, setAddonUrls, loadManifest, SEEDS } from "./api.js";
 import { toggleSaved } from "./library.js";
 import * as player from "./player.js";
 
 const root = $("#view");
 
 /* ── router ──────────────────────────────────────────────── */
+let NAV = 0;   /* view token — late async paints bail out when it changed */
 async function route(){
   const h = location.hash || "#/home";
   const [, seg, ...rest] = h.split("/");
+  root.dataset.nav = String(++NAV);
   $$("#navLinks a").forEach(a =>
     a.classList.toggle("on", h.startsWith(`#${ seg }`)));
+
+  /* leaving a detail route should fold the detail overlay (browser-back etc.) */
+  if (!h.startsWith("#/detail/")){ const d = $("#detail"); if (d.open) d.close(); }
 
   if (h.startsWith("#/browse/") && rest[0]){
     const [type, genre = ""] = rest[0].split("/").map(decodeURIComponent);
@@ -133,7 +138,149 @@ async function renderAddonList(){
   }));
 }
 
-/* ── canopy vines on the page corners ────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   THEME STUDIO — presets · accent · weather · wallpaper
+   (settings live in localStorage; the forest remembers)
+   ═══════════════════════════════════════════════════════════ */
+const LS_SET = "streamio.settings";
+const PRESETS = [
+  { id: "rainforest",  name: "rainforest night", demo: "linear-gradient(135deg,#0c2618,#051108)", accent: "#7be38b" },
+  { id: "glade",       name: "sunlit glade",     demo: "linear-gradient(135deg,#3f6b2c,#12240f)", accent: "#f2c94c" },
+  { id: "pine",        name: "midnight pine",    demo: "linear-gradient(135deg,#0a2325,#030b0e)", accent: "#8fe8d2" },
+  { id: "wildflower",  name: "wildflower hollow",demo: "linear-gradient(135deg,#3a2350,#120b18)", accent: "#ff8fab" },
+];
+const ACCENTS = ["#7be38b", "#f2c94c", "#8fe8d2", "#ff8fab", "#9ecbff", "#ffb37b", "#c9a6ff"];
+const settings = (() => { try{ return JSON.parse(localStorage.getItem(LS_SET) || "{}") }catch{ return {} } })();
+const saveSet = () => localStorage.setItem(LS_SET, JSON.stringify(settings));
+
+function apply(){
+  document.body.dataset.theme  = settings.theme  ?? "rainforest";
+  document.body.dataset.rain   = settings.rain   === false ? "off" : "on";
+  document.body.dataset.rays   = settings.rays   === false ? "off" : "on";
+  document.body.dataset.grain  = settings.grain  === false ? "off" : "on";
+  document.body.dataset.fire   = settings.fire   === false ? "off" : "on";
+  document.body.dataset.vig    = settings.vignette === false ? "off" : "on";
+  document.body.dataset.motion = settings.motion === false ? "off" : "on";
+  document.body.dataset.font   = settings.font === "sans" ? "sans" : "serif";
+  document.body.style.removeProperty("--glow");
+  document.body.style.removeProperty("--moss");
+  document.body.style.removeProperty("--card-w");
+  document.body.style.removeProperty("--glass-b");
+  if (settings.accent){
+    const acc = settings.accent;
+    /* glow strength (25–100%) bends the accent toward the gloom */
+    const glow = (settings.glow != null && settings.glow < 100)
+      ? `color-mix(in oklab, ${acc} ${settings.glow}%, transparent)` : acc;
+    document.body.style.setProperty("--glow", glow);
+    document.body.style.setProperty("--moss", `color-mix(in oklab, ${acc} 62%, #0d2a17)`);
+  }
+  if (settings.card != null && settings.card != "152")
+    document.body.style.setProperty("--card-w", `${settings.card}px`);
+  if (settings.blur != null && settings.blur != 12)
+    document.body.style.setProperty("--glass-b", `${settings.blur}px`);
+  let wall = document.querySelector(".wall-layer");
+  if (settings.wall){
+    wall ??= Object.assign(document.createElement("div"), { className: "wall-layer" });
+    wall.style.backgroundImage = `url("${String(settings.wall).replace(/"/g, "%22")}")`;
+    if (!wall.isConnected) document.body.prepend(wall);
+  } else wall?.remove();
+  document.title = "Streamio 🌿 — a media center for the forest";
+}
+
+const dlgS = $("#settings");
+$("#settingsBtn").onclick = () => { paintSettings(); dlgS.showModal() };
+
+function paintSettings(){
+  $("#themePreset").innerHTML = PRESETS.map(p => `
+    <button class="swatch ${(settings.theme ?? "rainforest") === p.id ? "on" : ""}" data-preset="${p.id}" title="${p.name}">
+      <i style="background:${p.demo}"></i><span>${p.name}</span>
+    </button>`).join("");
+  $$("#themePreset .swatch").forEach(b => b.onclick = () => {
+    settings.theme = b.dataset.preset; settings.accent = undefined; saveSet(); apply(); paintSettings();
+  });
+  $("#accentPreset").innerHTML = "";
+  for (const c of ACCENTS){
+    const b = document.createElement("button");
+    b.className = "swatch accent-swatch"; b.title = c;
+    b.style.background = c;
+    b.style.outline = settings.accent === c ? `2px solid var(--text)` : "none";
+    b.style.outlineOffset = "2px";
+    b.onclick = () => { settings.accent = settings.accent === c ? undefined : c; saveSet(); apply(); paintSettings() };
+    $("#accentPreset").appendChild(b);
+  }
+  $("#accentCustom").value = settings.accent ?? "#7be38b";
+  $("#setRain").checked  = settings.rain  !== false;
+  $("#setRays").checked  = settings.rays  !== false;
+  $("#setGrain").checked = settings.grain !== false;
+  $("#setFire").checked  = settings.fire  !== false;
+  $("#setVig").checked   = settings.vignette !== false;
+  $("#setMotion").checked= settings.motion !== false;
+  $("#setGlow").value    = settings.glow ?? 100;   $("#outGlow").textContent = `${settings.glow ?? 100}%`;
+  $("#setCard").value    = settings.card ?? 152;   $("#outCard").textContent = `${settings.card ?? 152}px`;
+  $("#setGlass").value   = settings.blur ?? 12;    $("#outGlass").textContent = `${settings.blur ?? 12}px`;
+  $$(".seg-row [data-font]").forEach(b => b.classList.toggle("on", (settings.font ?? "serif") === b.dataset.font));
+}
+$("#accentCustom").addEventListener("input", (e) => {
+  settings.accent = e.target.value; saveSet(); apply();
+});
+$("#setRain").onchange  = (e) => { settings.rain  = e.target.checked; saveSet(); apply() };
+$("#setRays").onchange  = (e) => { settings.rays  = e.target.checked; saveSet(); apply() };
+$("#setGrain").onchange = (e) => { settings.grain = e.target.checked; saveSet(); apply() };
+$("#setFire").onchange  = (e) => { settings.fire  = e.target.checked; saveSet(); apply() };
+$("#setVig").onchange   = (e) => { settings.vignette = e.target.checked; saveSet(); apply() };
+$("#setMotion").onchange= (e) => { settings.motion = e.target.checked; saveSet(); apply() };
+$("#setGlow").addEventListener("input",  (e) => { settings.glow = +e.target.value; $("#outGlow").textContent = `${e.target.value}%`; saveSet(); apply() });
+$("#setCard").addEventListener("input",  (e) => { settings.card = +e.target.value; $("#outCard").textContent = `${e.target.value}px`; saveSet(); apply() });
+$("#setGlass").addEventListener("input", (e) => { settings.blur = +e.target.value; $("#outGlass").textContent = `${e.target.value}px`; saveSet(); apply() });
+$$(".seg-row [data-font]").forEach(b => b.onclick = () => { settings.font = b.dataset.font; saveSet(); apply(); paintSettings() });
+$("#wallSet").onclick = () => {
+  const v = $("#wallPath").value.trim();
+  if (!v) return;
+  settings.wall = v; saveSet(); apply(); dlgS.close();
+};
+$("#wallClear").onclick = () => { settings.wall = undefined; delete settings.wall; saveSet(); apply() };
+$("#resetAll").onclick = () => { localStorage.removeItem(LS_SET);
+  for (const k of ["theme","accent","wall","rain","rays","grain","fire","vignette","motion","glow","card","blur","font"]) delete settings[k];
+  apply(); paintSettings();
+};
+
+/* ═══════════════════════════════════════════════════════════
+   FIRST LIGHT — welcome + one-click planting of the basics
+   ═══════════════════════════════════════════════════════════ */
+const dlgW = $("#welcome");
+if (localStorage.getItem("streamio.greeted") !== "yes" && addonUrls().length === 0){
+  $("#seedList").innerHTML = SEEDS.map(s => `
+    <div class="addon"><img src="assets/logo.svg"/>
+      <div class="meta"><div class="nm">${s.name}</div><div class="ds">${s.icon}</div></div>
+    </div>`).join("");
+  $("#plantAll").onclick = async () => {
+    setAddonUrls([...addonUrls(), ...SEEDS.map(s => s.url)]);
+    $("#addonCount").textContent = `${SEEDS.length} addons`;
+    localStorage.setItem("streamio.greeted", "yes");
+    dlgW.close(); route();
+  };
+  ["click", "keydown"].forEach(() => dlgW.addEventListener("close", () => localStorage.setItem("streamio.greeted", "yes"), { once: true }));
+  setTimeout(() => dlgW.showModal(), 700);
+}
+
+/* ── attraction: follow-glow + rail arrows ───────────────── */
+document.addEventListener("pointermove", (e) => {
+  const card = e.target.closest?.(".card");
+  if (!card) return;
+  const b = card.getBoundingClientRect();
+  card.style.setProperty("--gx", `${((e.clientX - b.left) / b.width) * 100}%`);
+  card.style.setProperty("--gy", `${((e.clientY - b.top) / b.height) * 100}%`);
+}, { passive: true });
+
+document.addEventListener("click", (e) => {
+  const n = e.target.closest(".rail-nav");
+  if (!n) return;
+  const rail = n.closest(".rail-w")?.querySelector(".rail");
+  rail?.scrollBy({ left: n.dataset.dir === "prev" ? -700 : 700, behavior: "smooth" });
+});
+
+/* ═══════════════════════════════════════════════════════════
+   canopy vines on the page corners ──────────────────────── */
 const vine = (cls) => {
   const v = document.createElement("div");
   v.className = `vine ${cls}`; v.setAttribute("aria-hidden", "true");
@@ -148,6 +295,24 @@ const vine = (cls) => {
 };
 if (matchMedia("(min-width: 1100px)").matches){ vine("l"); vine("r") }
 
+/* drifting fireflies among the leaves — spawn a wandering swarm once */
+(function fireflies(){
+  const box = document.querySelector(".fireflies");
+  if (!box) return;
+  for (let i = 0; i < 14; i++){
+    const s = document.createElement("i");
+    s.style.setProperty("--x",  `${(Math.random() * 96).toFixed(1)}vw`);
+    s.style.setProperty("--y0", `${(52 + Math.random() * 42).toFixed(1)}vh`);
+    s.style.setProperty("--t",  `${(14 + Math.random() * 24).toFixed(1)}s`);
+    s.style.setProperty("--d",  `${(-Math.random() * 34).toFixed(1)}s`);
+    s.style.setProperty("--o",  `${(0.3 + Math.random() * 0.45).toFixed(2)}`);
+    s.style.setProperty("--s",  `${(2 + Math.random() * 3).toFixed(1)}px`);
+    box.appendChild(s);
+  }
+})();
+
 /* ── first flight ────────────────────────────────────────── */
-addEventListener("DOMContentLoaded", route);
-if (document.readyState !== "loading") route();
+function syncAddonCount(){ try { const n = addonUrls().length; const el = document.getElementById("addonCount"); if (el) el.textContent = n ? `${n} addon${n > 1 ? "s" : ""}` : "addons" } catch(e){} }
+syncAddonCount();
+addEventListener("DOMContentLoaded", () => { syncAddonCount(); apply(); route() });
+if (document.readyState !== "loading") { apply(); route(); }

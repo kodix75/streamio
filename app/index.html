@@ -18,6 +18,7 @@
   <div class="forest-bg" aria-hidden="true">
     <div class="rays"></div>
     <div class="rain"></div>
+    <div class="fireflies"></div>
     <div class="grain"></div>
   </div>
 
@@ -39,6 +40,10 @@
           <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
           <input id="q" type="search" placeholder="search the forest…" autocomplete="off"/>
         </label>
+        <button id="settingsBtn" class="chip" title="customize — themes, rain, wallpaper">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M19.14 12.94a7 7 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.23-1.13.55-1.62.94l-2.39-.96a.5.5 0 0 0-.61.22L2.65 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7 7 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.61.22l2.39-.96c.49.39 1.03.71 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.59-.23 1.13-.55 1.62-.94l2.39.96c.22.09.48 0 .61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5Z"/></svg>
+          <span>theme</span>
+        </button>
         <button id="addonsBtn" class="chip" title="addons — connect sources">
           <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5a2.5 2.5 0 1 0-5 0V5H4a2 2 0 0 0-2 2v3.5h1.5a2.5 2.5 0 1 1 0 5H2V19a2 2 0 0 0 2 2h3.5v-1.5a2.5 2.5 0 1 1 5 0V21H16a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 1 0 0-5Z"/></svg>
           <span id="addonCount">addons</span>
@@ -72,6 +77,81 @@
     <p class="muted small">Want streams for torrents &amp; sources? Try official community manifests like
       <code>https://torrentio.strem.fun/manifest.json</code> or Cinemeta's own
       <code>https://v3-cinemeta.strem.io/manifest.json</code>.</p>
+  </dialog>
+
+  <!-- ══ theme studio / settings ══ -->
+  <dialog id="settings">
+    <div class="dlg-head">
+      <h2>⚙️ Theme Studio</h2>
+      <button class="icon-btn" data-close title="close">✕</button>
+    </div>
+
+    <h3 class="set-h">Themes — the forest remembers</h3>
+    <div class="swatches" id="themePreset"></div>
+
+    <h3 class="set-h">Accent — glow of the fireflies ✨</h3>
+    <div class="add-row" style="align-items:center">
+      <div class="swatches" id="accentPreset" style="flex:1"></div>
+      <label class="chip" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px">custom
+        <input id="accentCustom" type="color" style="width:30px;height:24px;border:none;background:none;padding:0;cursor:pointer"/>
+      </label>
+    </div>
+
+    <h3 class="set-h">Weather &amp; glass</h3>
+    <div class="toggles">
+      <label class="switch"><input id="setRain" type="checkbox"/><span>🌧 rain streaks</span></label>
+      <label class="switch"><input id="setRays" type="checkbox"/><span>🌿 god rays</span></label>
+      <label class="switch"><input id="setGrain" type="checkbox"/><span>🎞 film grain</span></label>
+    </div>
+
+    <h3 class="set-h">Ambient — fireflies &amp; depth</h3>
+    <div class="toggles">
+      <label class="switch"><input id="setFire" type="checkbox"/><span>✨ fireflies</span></label>
+      <label class="switch"><input id="setVig" type="checkbox"/><span>🌌 vignette</span></label>
+      <label class="switch"><input id="setMotion" type="checkbox"/><span>🍃 motion</span></label>
+    </div>
+
+    <h3 class="set-h">Feel — glow, cards, glass, letters</h3>
+    <div class="sliders">
+      <label class="range"><span>glow strength</span>
+        <input id="setGlow" type="range" min="25" max="100" step="5"/><output id="outGlow"></output></label>
+      <label class="range"><span>card size</span>
+        <input id="setCard" type="range" min="112" max="210" step="2"/><output id="outCard"></output></label>
+      <label class="range"><span>glass blur</span>
+        <input id="setGlass" type="range" min="0" max="26" step="1"/><output id="outGlass"></output></label>
+    </div>
+    <div class="seg-row">
+      <span>letters</span>
+      <button class="chip" data-font="serif">serif</button>
+      <button class="chip" data-font="sans">sans</button>
+    </div>
+
+    <h3 class="set-h">Wallpaper — grow your own</h3>
+    <div class="add-row">
+      <input id="wallPath" type="text" placeholder="paste an image URL…"/>
+      <button id="wallSet" class="btn">cast it</button>
+      <button id="wallClear" class="btn ghost">clear</button>
+    </div>
+    <p class="muted small">To use one of your own photos: copy it into the app's assets, e.g.
+      <code style="user-select:all">cp ~/Pictures/ek.jpg ~/.streamio/app/assets/wall.jpg</code>
+      — then type <code style="user-select:all">assets/wall.jpg</code> above. The installer can do it too:
+      <code style="user-select:all">install.sh --wallpaper ~/Pictures/photo.jpg</code>.</p>
+
+    <div class="dlg-foot">
+      <button id="resetAll" class="icon-btn rm" style="margin-left:auto">reset the grove 🍂</button>
+    </div>
+  </dialog>
+
+  <!-- ══ first-planting welcome ══ -->
+  <dialog id="welcome">
+    <div class="dlg-head"><h2>🧺 first light in the forest</h2><button class="icon-btn" data-close title="close">✕</button></div>
+    <p style="line-height:1.75" class="muted">Streamio ships with <b>no sources</b> — the woods are yours to plant.
+      Catalogs &amp; metadata are built-in (Cinemeta). For real streams, plant a community addon:</p>
+    <div id="seedList" class="addon-list"></div>
+    <div class="dlg-foot" style="display:flex;gap:10px;margin-top:14px">
+      <button id="plantAll" class="btn">🌱 plant the basics</button>
+      <button class="btn ghost" data-close>later, I'll plant my own</button>
+    </div>
   </dialog>
 
   <!-- ══ detail overlay ══ -->

@@ -32,11 +32,14 @@ the **addons you choose** — Streamio ships with none, like a forest with no ro
 
 ## ✨ features
 
-- 🌿 **rainforest UI** — floating glass menu with fern foliage **passing over its top edge**, mist rays, animated rain, film‑grain
+- 🌿 **rainforest UI** — floating glass menu with fern foliage **passing over its top edge**, mist rays, animated rain, film‑grain, drifting fireflies, painted vignette
 - 🎬 **works day one** — built‑in Cinemeta catalogs & search, playable trailers, series seasons & episodes
 - 🎁 **full addon cups** — paste any Stremio addon manifest URL: its catalogs sprout on home, its streams appear on details
-- 🕷 **every kind of stream** — direct files, `.m3u8` (HLS), YouTube, **torrents/magnets via WebTorrent** (seeded from public swarm)
-- 🌱 **your library** — save with ♡, continue‑watching bar, all in localStorage
+- 🕷 **every kind of stream** — direct files, `.m3u8` (HLS), YouTube, **torrents/magnets via WebTorrent** with a swarm watchdog (no more hanging on "connecting…")
+- 🌱 **your library** — save with ♡, continue‑watching bar, all in localStorage; library renders as a **map of your grove** (POI bubbles + dotted trails)
+- 🎨 **Theme Studio** — 4 presets (rainforest · glade · pine · wildflower), accent picker, rain/rays/grain/fireflies toggles, vignette & motion switches, glow strength, card size, glass blur, serif/sans letters, custom wallpaper (`--wallpaper`/`assets/wall.jpg`)
+- 🌅 **hero checkpoint** — glowing ring dial + key/value HUD (story/year/grove/trail) + orb action buttons
+- 🌾 **first‑run seeding** — welcome dialog plants Torrentio + Cinemeta manifests in one click (or "later, I'll plant my own")
 - 🕯 **zero dependencies to run** — just a static server (python/node, whatever is installed)
 
 ## 🌎 install from anywhere
@@ -94,17 +97,20 @@ CORS is open on Cinemeta & all addon hosts — it just works. Restart your serve
 
 | place | what grows there |
 | --- | --- |
-| 🌿 **floating menu** | glass pill with ferns **overhanging its top edge** — the signature texture element |
-| 🌫 **home** | hero of a random hit tonight, "continue watching", trending movie & series rails, your addon catalogs |
-| 🌲 **groves** | movies / series browsable by genre chips |
-| 🌊 **streams panel** | every planted addon's offer, labeled `file · hls · torrent · youtube`, one click plays |
+| 🌿 **floating menu** | glass pill with ferns **overhanging its top edge** — the signature texture element; addon count pill updates on boot |
+| 🌫 **home** | glowing ring-dial hero of a random hit tonight, key/value HUD, "continue watching", trending movie & series rails, vine-threaded posters, your addon catalogs |
+| 🌲 **groves** | movies / series browsable by genre chips (catalog race fixed — clicks land reliably) |
+| 🌊 **streams panel** | every planted addon's offer with quality pills, first row highlighted as "quick trail" |
 | 🌱 **addons drawer** | plant manifest URLs, unplant what's dead, see logos & descriptions |
-| ♡ **library** | saved posters + resume where you left |
-| 🌧 **player** | HLS/WebTorrent/YouTube, esc folds the tent, progress saved |
+| ♡ **library** | saved posters render as a **grove map** — circular POI bubbles on dotted trails |
+| 🌧 **player** | HLS/WebTorrent/YouTube, 45 s swarm watchdog, esc folds the tent, progress saved |
+| 🎨 **Theme Studio** | 4 presets + accent picker + rain/rays/grain/fireflies/vignette/motion switches + glow/card-size/glass sliders + serif/sans letters + custom wallpaper |
 
 ## 🍄 addons — the roots
 
 Streamio ships with **no sources by default** (no catalogs beyond Cinemeta metadata, no streams).
+On first launch a **welcome dialog** offers one click ("🌱 plant the basics") that plants
+Torrentio + Cinemeta's own manifests; choose "later, I'll plant my own" to skip. 🍄
 Open **addons** in the menu and plant any stremio‑protocol manifest, for example:
 
 | addon (paste into the drawer) | what it adds |
@@ -149,7 +155,9 @@ Cinemeta + Stremio addon protocol · hls.js · WebTorrent (CDN‑lazy) · Electr
 The interface borrows heat from the forest and honesty from these kin:
 [raffi](https://github.com/kaleidal/raffi) · [Opal](https://github.com/debpalash/Opal) ·
 [source code / inspiration: Stremio Neo](https://www.reddit.com/r/StremioAddons/comments/1pnbp5z/stremio_neo_a_modern_looking_open_source_form_of/) ·
-[stremio-addon-sdk](https://github.com/Stremio/stremio-addon-sdk) thanks for the protocol 🍊
+[stremio-addon-sdk](https://github.com/Stremio/stremio-addon-sdk) thanks for the protocol 🍊 ·
+Ori and the Blind Forest‑style game HUDs & fantasy‑map infographics for the checkpoint-dial
+hero, vine-threaded rails, POI-bubble library map, and firefly ambient (kept in the forest mood) 🌲
 
 ## 📄 license
 

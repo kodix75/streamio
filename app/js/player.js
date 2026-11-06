@@ -61,26 +61,66 @@ export function open({ kind, src, title, ref, provider }){
 
 function status(txt){ const s = elStatus(); s.textContent = txt; s.classList.remove("hidden"); if (!txt) s.classList.add("hidden") }
 
+/* browsers can't do UDP DHT — bare magnets need websocket trackers to find friends */
+const WSS_TRACKERS = [
+  "wss://tracker.openwebtorrent.com",
+  "wss://tracker.webtorrent.dev",
+  "wss://tracker.files.fm:7073/announce",
+];
+const ensureTrackers = (id, title) => {
+  if (!/^magnet:/i.test(id)) return id;
+  let m = id;
+  if (!/[?&]dn=/.test(m) && title) m += `&dn=${encodeURIComponent(title)}`;
+  if (!/[?&]tr=/.test(m)) m += WSS_TRACKERS.map(t => `&tr=${encodeURIComponent(t)}`).join("");
+  return m;
+};
+
 async function torrent(torrentId, video, title){
   status("🌿 waking webtorrent…");
-  try{ await cdn("https://cdn.jsdelivr.net/npm/webtorrent@2/dist/webtorrent.min.js") }
-  catch(e){ return status("couldn't load webtorrent from CDN — check your connection.") }
+  /* v2 ships as ESM — import it properly, fall back to the UMD v1 build */
+  try{
+    if (!window.WebTorrent){
+      const m = await import("https://cdn.jsdelivr.net/npm/webtorrent@2/+esm");
+      window.WebTorrent = m.default ?? m.WebTorrent;
+    }
+    if (typeof window.WebTorrent !== "function"){
+      await cdn("https://cdn.jsdelivr.net/npm/webtorrent@1.9.7/dist/webtorrent.min.js");
+    }
+  } catch { try{ await cdn("https://cdn.jsdelivr.net/npm/webtorrent@1.9.7/dist/webtorrent.min.js") } catch(e){ return status("couldn't grow webtorrent — check your connection 🌧") } }
+  if (typeof window.WebTorrent !== "function") return status("torrent engine didn't sprout — try another stream 🍄");
   window.streamioTorrent?.destroy?.();
   const client = window.streamioTorrent = new window.WebTorrent();
   status("🐍 connecting to the swarm…");
-  client.add(torrentId, (torrent) => {
-    const file = torrent.files.find(f => /\.(mp4|mkv|webm|avi|mov|m4v)$/i.test(f.name))
-              ?? torrent.files.find(f => f.progLength > 10 * 1024 * 1024) ?? torrent.files[0];
+
+  /* webtorrent's add() takes (id, [opts], ontorrent) — no error callback,
+     errors come via client.on("error"). never leave the forest hanging: */
+  let gaveUp = false, watchdog;
+  client.on?.("error", () => { gaveUp = true; clearTimeout(watchdog); status("swarm whispered errors — try another stream 🍄") });
+
+  let t = null;
+  try{ t = client.add(ensureTrackers(torrentId, title), (tor) => {
+    if (gaveUp) return;
+    clearTimeout(watchdog);
+    const file = tor.files.find(f => /\.(mp4|mkv|webm|avi|mov|m4v)$/i.test(f.name))
+              ?? tor.files.find(f => f.length > 10 * 1024 * 1024) ?? tor.files[0];
     if (!file) return status("no playable file in this torrent");
-    status(""); file.streamTo(video); file.getBlobURL?.();
-    torrent.on("download", () =>
-      status(`🐍 ${torrent.name} — ${torrent.downloadSpeed/1e6|0} Mb/s · ${torrent.numPeers} peers · ${(torrent.progress*100|0)}%`));
+    status(""); file.streamTo(video);
+    tor.on("download", () =>
+      status(`🐍 ${tor.name} — ${tor.downloadSpeed/1e6|0} Mb/s · ${tor.numPeers} peers · ${(tor.progress*100|0)}%`));
+    tor.on("done", () => status(`done 🌸 ${tor.length/1e9 < 1 ? (tor.length/1e6|0)+" MB" : (tor.length/1e9).toFixed(1)+" GB"}`));
     video.addEventListener("canplay", function once(){
       video.removeEventListener("canplay", once);
       const p = video.dataset.ref && getProgress(video.dataset.ref);
-      if (p && p.t > 60 && Math.abs(video.duration - p.d) < 200) video.currentTime = p.t;
+      if (p && p.t > 60 && video.duration && Math.abs(video.duration - p.d) < 200) video.currentTime = p.t;
     });
-  }, () => status("torrent failed to bloom — trying another stream is usually the fix 🍄"));
+  }) } catch(e){ gaveUp = true; return status("torrent failed to bloom — trying another stream is usually the fix 🍄") }
+
+  t?.on?.("noPeers", () => { if (!gaveUp) status("the forest is quiet — waiting for a friend to join… 🦗") });
+  watchdog = setTimeout(() => {
+    if (gaveUp || (t && (t.progress > 0 || t.metadata))) return;
+    gaveUp = true;
+    status("the swarm went quiet — browser-edition needs webRTC friends for this one. try another stream, or the trailer 🍄");
+  }, 45000);
 }
 
 export function close(){
