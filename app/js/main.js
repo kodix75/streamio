@@ -91,6 +91,24 @@ document.addEventListener("keydown", (e) => {
 const dlg = $("#addons");
 $("#addonsBtn").onclick = () => { 
   const bu = $("#backendUrl"); if (bu && !bu.value) bu.value = backendUrl();
+  // lazy-bind backend test/save (robust against cached/old DOM)
+  const saveBtn = $("#backendSave");
+  if (saveBtn && !saveBtn._bound){ saveBtn._bound = true; saveBtn.onclick = () => {
+    const u = $("#backendUrl").value.trim() || "http://127.0.0.1:7000";
+    setBackendUrl(u);
+    $("#backendStatus").textContent = `saved: ${u} 🌿`;
+  };}
+  const testBtn = $("#backendTest");
+  if (testBtn && !testBtn._bound){ testBtn._bound = true; testBtn.onclick = async () => {
+    const u = $("#backendUrl").value.trim() || backendUrl();
+    setBackendUrl(u);
+    $("#backendStatus").textContent = "testing…";
+    try{
+      const r = await fetch(`${u}/health`, { signal: AbortSignal.timeout(2000) });
+      const d = await r.json();
+      $("#backendStatus").textContent = r.ok ? `✓ connected — ${d.service || "ok"} (${d.sessions ?? 0} sessions)` : `✗ ${r.status}`;
+    }catch(e){ $("#backendStatus").textContent = `✗ offline (${e.message})` }
+  };}
   renderAddonList(); dlg.showModal() 
 };
 $("#addonAdd").onclick = doPlant;
