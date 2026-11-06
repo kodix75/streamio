@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams } from "./api.js";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch } from "./api.js";
 import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js";
 import { open as openPlayer } from "./player.js";
 
@@ -169,12 +169,13 @@ export async function searchView(root, q){
   root.innerHTML = `<h1 style="margin-top:108px">searching for “${esc(q)}” 🦋</h1>
     <div class="grid">${skelCards(10)}</div>`;
   const extra = `search=${encodeURIComponent(q)}`;
-  const [mv, sr] = await Promise.all([
+  const [mv, sr, ar] = await Promise.all([
     cinemetaCatalog("movie", extra).catch(() => []),
     cinemetaCatalog("series", extra).catch(() => []),
+    archiveSearch(q).catch(() => []),
   ]);
   if (root.dataset.nav !== nav) return;
-  const all = [...mv, ...sr];
+  const all = [...mv, ...sr, ...ar];
   root.innerHTML = `<h1 style="margin-top:108px">“${esc(q)}” in the wild</h1>
     <div class="grid">${all.map(m => posterCard(m)).join("")}</div>`
     + (!all.length ? emptyState(`the forest came up empty for “${esc(q)}”`) : "");

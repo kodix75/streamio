@@ -259,3 +259,21 @@
 .seg-row{display:flex; align-items:center; gap:9px; margin-top:8px; flex-wrap:wrap;
   font-weight:800; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--text-dim)}
 .seg-row .chip{padding:6px 13px; font-size:12px; letter-spacing:0; text-transform:none}
+
+/* ── debrid quick-plant box ──────────────────────────────── */
+.debrid-box{margin:14px 0 4px; border:1px solid var(--line); border-radius:14px;
+  background:rgba(9,26,17,.5); padding:10px 14px}
+.debrid-box > summary{cursor:pointer; font-weight:700; color:var(--glow); list-style:none}
+.debrid-box > summary::-webkit-details-marker{display:none}
+.debrid-box[open] > summary{margin-bottom:8px}
+.debrid-box .add-row{margin:8px 0 4px}
+.debrid-box select{font:inherit; color:var(--text); background:rgba(6,17,11,.6);
+  border:1px solid var(--line); outline:none; padding:10px 14px}
+
+/* view fade-in */
+@keyframes fadeUp{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+#view > *{animation:fadeUp .55s cubic-bezier(.2,.8,.3,1) both}
+#view > *:nth-child(2){animation-delay:.06s}
+#view > *:nth-child(3){animation-delay:.12s}
+#view > *:nth-child(4){animation-delay:.18s}
+section:nth-child(n+5){animation:fadeUp .55s .22s cubic-bezier(.2,.8,.3,1) both}

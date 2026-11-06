@@ -93,6 +93,27 @@ $("#addonsBtn").onclick = () => { renderAddonList(); dlg.showModal() };
 $("#addonAdd").onclick = doPlant;
 $("#addonUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") doPlant() });
 
+/* debrid quick-plant: turn a personal API key into a working addon */
+const debridPlantBtn = $("#debridPlant");
+if (debridPlantBtn) debridPlantBtn.onclick = async () => {
+  const key = $("#debridKey").value.trim();
+  const prov = $("#debridProvider").value;
+  if (!key) { $("#debridKey").placeholder = "paste your API key first"; return }
+  const url = prov === "alldebrid"
+    ? `https://torrentio.strem.fun/alldebrid=${encodeURIComponent(key)}/manifest.json`
+    : `https://torrentio.strem.fun/realdebrid=${encodeURIComponent(key)}/manifest.json`;
+  $("#debridKey").value = ""; $("#debridKey").placeholder = "planting…";
+  try{
+    const m = await loadManifest(url);
+    setAddonUrls([...addonUrls(), url]);
+    $("#debridKey").placeholder = `🌿 ${m.name} took root!`;
+    renderAddonList();
+  }catch(err){
+    $("#debridKey").placeholder = "that key didn't sprout — check it";
+  }
+  setTimeout(() => $("#debridKey").placeholder = "paste your API key…", 2600);
+};
+
 async function doPlant(){
   const inp = $("#addonUrl");
   let url = inp.value.trim();

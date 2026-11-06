@@ -200,7 +200,24 @@ export async function archiveStreams(id){
   return [{ url: `${ARCHIVE}/download/${ident}/${encodeURIComponent(file)}`, name: file,
             _addon: { name: "Internet Archive (public domain)" } }];
 }
-/* curated seedlings for the first planting */
+export async function archiveSearch(q, limit = 12){
+  if (!q) return [];
+  const query = `mediatype:movies AND title:("${q}")`;
+  const url = `${ARCHIVE}/advancedsearch.php?q=${encodeURIComponent(query)}&fl[]=identifier&fl[]=title&fl[]=description&rows=24&page=1&output=json&sort[]=downloads+desc`;
+  const d = await jget(url).catch(() => ({}));
+  const docs = d?.response?.docs ?? [];
+  const candidates = docs.map(x => ({
+    id: `ia:${x.identifier}`,
+    name: x.title || x.identifier,
+    type: "movie",
+    poster: `${ARCHIVE}/services/img/${x.identifier}`,
+    description: x.description,
+  }));
+  const checks = await Promise.all(candidates.map(async (c) => {
+    try { const r = await archiveMeta(c.id); return r.file ? c : null; } catch(e){ return null }
+  }));
+  return checks.filter(Boolean).slice(0, limit);
+}
 export const SEEDS = [
   {
     name: "Torrentio", url: "https://torrentio.strem.fun/manifest.json",

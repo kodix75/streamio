@@ -76,6 +76,19 @@
       <button id="addonAdd" class="btn">Plant it</button>
     </div>
     <div id="addonList" class="addon-list"></div>
+    <details class="debrid-box">
+      <summary>🔑 debrid — unlock any torrent in the browser (Real-Debrid / AllDebrid)</summary>
+      <p class="muted small">Paste your API key to plant a debrid-enabled Torrentio. Streams then arrive as direct
+        files that play instantly. Your key stays in your browser's localStorage.</p>
+      <div class="add-row">
+        <select id="debridProvider" class="glass-in" style="padding:10px 14px;border-radius:99px">
+          <option value="realdebrid">Real-Debrid</option>
+          <option value="alldebrid">AllDebrid</option>
+        </select>
+        <input id="debridKey" type="password" placeholder="paste your API key…"/>
+        <button id="debridPlant" class="btn">plant it</button>
+      </div>
+    </details>
     <p class="muted small">Streamio ships with a built-in <b>public domain cinema</b> rail (Internet Archive mp4s) that
       play directly in the browser — no peers, no debrid, no account. 🍄</p>
   </dialog>
