@@ -6,7 +6,7 @@
    Then open the web app; torrents will play through this server
    instead of the (peer-limited) in-browser WebTorrent.
 
-   Env: PORT (default 7000), HOST (default 127.0.0.1)
+   Env: PORT (default 7000), HOST (default 127.0.0.1), FFMPEG_BIN
    ═══════════════════════════════════════════════════════════ */
 const http = require("http");
 const url = require("url");
@@ -20,17 +20,30 @@ const PORT = parseInt(process.env.PORT || "7000", 10);
 const HOST = process.env.HOST || "127.0.0.1";
 
 // ffmpeg availability
-let FFMPEG = null;
-try { execSync("ffmpeg -version", { stdio: "ignore" }); FFMPEG = "ffmpeg"; }
-catch (e) { try { execSync("/usr/bin/ffmpeg -version", { stdio: "ignore" }); FFMPEG = "/usr/bin/ffmpeg"; } catch (x) {} }
-// also check env
-if (process.env.FFMPEG_BIN) FFMPEG = process.env.FFMPEG_BIN;
+let FFMPEG = process.env.FFMPEG_BIN || null;
+if (!FFMPEG) {
+  try { execSync("ffmpeg -version", { stdio: "ignore" }); FFMPEG = "ffmpeg"; }
+  catch (e) { try { execSync("/usr/bin/ffmpeg -version", { stdio: "ignore" }); FFMPEG = "/usr/bin/ffmpeg"; } catch (x) {} }
+}
+
+// pick an available H.264 encoder (libx264 may be missing on "free" ffmpeg builds)
+function pickEncoder() {
+  const candidates = ["libx264", "libopenh264", "h264_vaapi", "h264_nvenc", "h264_qsv", "h264_v4l2m2m"];
+  for (const enc of candidates) {
+    try {
+      const out = execSync(`${FFMPEG || "ffmpeg"} -hide_banner -encoders 2>/dev/null`, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+      if (out.includes(enc)) return enc;
+    } catch (e) {}
+  }
+  return null;
+}
+const H264_ENCODER = FFMPEG ? pickEncoder() : null;
 
 function isDirectlyPlayable(name) {
   return /\.(mp4|webm|ogg|m4v|mov)$/i.test(name);
 }
 
-// id -> { engine, file, name, createdAt, playable, transcoding, transcodePath, transcodeError }
+// id -> { engine, file, name, createdAt, playable, transcoding, transcodePath, transcodeError, transcodedReady }
 const sessions = new Map();
 let nextId = 1;
 
@@ -51,13 +64,24 @@ function pickVideoFile(files) {
   const videoExt = /\.(mp4|mkv|webm|avi|mov|m4v|m2ts|ts)$/i;
   const vids = files.filter(f => videoExt.test(f.name));
   if (!vids.length) return files.sort((a, b) => b.length - a.length)[0];
-  // prefer the largest video file (usually the main feature)
   return vids.sort((a, b) => b.length - a.length)[0];
 }
 
 function startTorrent(magnet, cb) {
+  // append public trackers if the magnet has none
+  if (!/[?&]tr=/.test(magnet)) {
+    const trackers = [
+      "udp://tracker.openbittorrent.com:80",
+      "udp://tracker.opentrackr.org:1337/announce",
+      "udp://explodie.org:6969",
+      "udp://tracker.empire-js.us:1337",
+      "wss://tracker.btorrent.xyz",
+      "wss://tracker.openwebtorrent.com",
+    ];
+    magnet += trackers.map(t => `&tr=${encodeURIComponent(t)}`).join("");
+  }
   let engine;
-  try { engine = torrentStream(magnet, { connections: 100, uploads: 10, path: undefined }); }
+  try { engine = torrentStream(magnet, { connections: 100, uploads: 10 }); }
   catch (e) { return cb(e); }
 
   const onReady = () => {
@@ -66,33 +90,29 @@ function startTorrent(magnet, cb) {
     if (!file) { engine.destroy(); return cb(new Error("no playable file in torrent")); }
     const id = String(nextId++);
     const playable = isDirectlyPlayable(file.name);
-    const sess = { engine, file, name: file.name, createdAt: Date.now(), playable, transcoding: false, transcodePath: null, transcodeError: null };
+    const sess = { engine, file, name: file.name, createdAt: Date.now(), playable, transcoding: false, transcodePath: null, transcodeError: null, transcodedReady: playable };
     sessions.set(id, sess);
 
     // if not directly playable, transcode with ffmpeg (if available)
     if (!playable) {
-      if (!FFMPEG) {
-        sess.transcodeError = "ffmpeg not found — install ffmpeg for MKV/H.265 playback";
+      if (!FFMPEG || !H264_ENCODER) {
+        sess.transcodeError = "ffmpeg has no H.264 encoder — install full ffmpeg (RPM Fusion) for MKV/H.265 playback";
+        sess.transcodedReady = false;
       } else {
         sess.transcoding = true;
         const outPath = path.join(os.tmpdir(), `streamio_${id}.mp4`);
         sess.transcodePath = outPath;
-        const ffmpeg = spawn(FFMPEG, [
-          "-y", "-i", "pipe:0",  // we'll feed via file read instead
-        ]);
-        // simpler: read from the torrent file's path on disk? torrent-stream gives file.path
-        // torrent-stream files have .path (relative) and engine has .path (download dir)
-        // Use file.createReadStream piped to ffmpeg stdin
         const args = [
-          "-y",
-          "-i", "pipe:0",
-          "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+          "-y", "-i", "pipe:0",
+          "-c:v", H264_ENCODER, "-preset", "fast", "-crf", "23",
           "-c:a", "aac", "-b:a", "192k",
           "-movflags", "+faststart",
           outPath,
         ];
         const ff = spawn(FFMPEG, args, { stdio: ["pipe", "pipe", "pipe"] });
         const src = file.createReadStream();
+        src.on("error", (e) => { console.error("src error:", e.message); try { ff.stdin.end(); } catch (x) {} });
+        ff.stdin.on("error", () => { /* EPIPE etc — ignore */ });
         src.pipe(ff.stdin);
         let stderr = "";
         ff.stderr.on("data", (d) => { stderr += d.toString(); });
@@ -112,8 +132,6 @@ function startTorrent(magnet, cb) {
           sess.transcodedReady = false;
         });
       }
-    } else {
-      sess.transcodedReady = true;
     }
 
     // auto-cleanup after 2h of inactivity
@@ -146,23 +164,7 @@ const server = http.createServer((req, res) => {
 
   // health
   if (path === "/health" || path === "/") {
-    json(res, 200, { ok: true, service: "streamio-backend", sessions: sessions.size });
-    return;
-  }
-
-  // start a torrent
-  if (path === "/play" && req.method === "POST") {
-    let body = "";
-    req.on("data", (c) => { body += c; if (body.length > 1e6) req.destroy(); });
-    req.on("end", () => {
-      let magnet = "";
-      try { magnet = (JSON.parse(body || "{}").magnet || "").trim(); } catch (e) {}
-      if (!magnet) { json(res, 400, { error: "magnet required" }); return; }
-      startTorrent(magnet, (err, info) => {
-        if (err) { json(res, 500, { error: String(err.message || err) }); return; }
-        json(res, 200, { ...info, streamUrl: `/stream/${info.id}` });
-      });
-    });
+    json(res, 200, { ok: true, service: "streamio-backend", sessions: sessions.size, ffmpeg: !!FFMPEG });
     return;
   }
 
@@ -182,6 +184,22 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // start a torrent
+  if (path === "/play" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+    req.on("end", () => {
+      let magnet = "";
+      try { magnet = (JSON.parse(body || "{}").magnet || "").trim(); } catch (e) {}
+      if (!magnet) { json(res, 400, { error: "magnet required" }); return; }
+      startTorrent(magnet, (err, info) => {
+        if (err) { json(res, 500, { error: String(err.message || err) }); return; }
+        json(res, 200, { ...info, streamUrl: `/stream/${info.id}` });
+      });
+    });
+    return;
+  }
+
   // stream a file (with range support)
   const streamMatch = path.match(/^\/stream\/(\d+)(?:\/(\d+))?$/);
   if (streamMatch && req.method === "GET") {
@@ -196,10 +214,10 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ transcoding: true, ready: false }));
       return;
     }
-    // transcoding failed
+    // transcoding failed -> still try to stream the original file (browser may handle it)
     if (!sess.playable && sess.transcodeError) {
-      json(res, 500, { error: sess.transcodeError });
-      return;
+      console.error("transcode failed, streaming original:", sess.transcodeError);
+      // fall through to stream original file
     }
 
     // pick the file to stream
@@ -208,19 +226,12 @@ const server = http.createServer((req, res) => {
     if (sess.transcodePath && sess.transcodedReady && fs.existsSync(sess.transcodePath)) {
       total = fs.statSync(sess.transcodePath).size;
       filePath = sess.transcodePath;
-    } else if (sess.file) {
-      total = sess.file.length;
-    } else {
-      json(res, 404, { error: "no file" }); return;
     }
 
-    const file = (sess.transcodePath && sess.transcodedReady) ? null : sess.file;
-
-    const range = req.headers.range;
     if (filePath) {
       // stream from transcoded file on disk (with range support)
-      if (range) {
-        const m = /bytes=(\d+)-(\d*)/.exec(range);
+      if (req.headers.range) {
+        const m = /bytes=(\d+)-(\d*)/.exec(req.headers.range);
         if (m) {
           const start = parseInt(m[1], 10);
           const end = m[2] ? parseInt(m[2], 10) : total - 1;
@@ -245,11 +256,11 @@ const server = http.createServer((req, res) => {
     }
 
     // stream from torrent (original, range support)
-    const sessFile = file;
-    if (!sessFile) { json(res, 404, { error: "file not found" }); return; }
-    const total2 = sessFile.length;
-    if (range) {
-      const m = /bytes=(\d+)-(\d*)/.exec(range);
+    const file = sess.file;
+    if (!file) { json(res, 404, { error: "file not found" }); return; }
+    const total2 = file.length;
+    if (req.headers.range) {
+      const m = /bytes=(\d+)-(\d*)/.exec(req.headers.range);
       if (m) {
         const start = parseInt(m[1], 10);
         const end = m[2] ? parseInt(m[2], 10) : total2 - 1;
@@ -260,14 +271,14 @@ const server = http.createServer((req, res) => {
           "Content-Length": chunkSize,
           "Content-Type": "video/mp4",
         });
-        const stream = sessFile.createReadStream({ start, end });
+        const stream = file.createReadStream({ start, end });
         stream.pipe(res);
         stream.on("error", () => { try { res.end(); } catch (e) {} });
         return;
       }
     }
     res.writeHead(200, { "Content-Length": total2, "Content-Type": "video/mp4", "Accept-Ranges": "bytes" });
-    const stream = sessFile.createReadStream();
+    const stream = file.createReadStream();
     stream.pipe(res);
     stream.on("error", () => { try { res.end(); } catch (e) {} });
     return;
@@ -278,7 +289,7 @@ const server = http.createServer((req, res) => {
   if (stopMatch && (req.method === "DELETE" || req.method === "POST")) {
     const id = stopMatch[1];
     const sess = sessions.get(id);
-    if (sess) { try { sess.engine.destroy(); } catch (e) {} sessions.delete(id); }
+    if (sess) { try { sess.engine.destroy(); } catch (e) {} if (sess.transcodePath) try { fs.unlinkSync(sess.transcodePath); } catch (e) {} sessions.delete(id); }
     json(res, 200, { ok: true });
     return;
   }
@@ -296,12 +307,18 @@ server.on("error", (e) => {
   process.exit(1);
 });
 
+process.on("uncaughtException", (e) => {
+  console.error("uncaught:", e.message);
+});
+
 server.listen(PORT, HOST, () => {
   console.log(`🌿 streamio-backend listening on http://${HOST}:${PORT}`);
+  console.log("   ffmpeg:", FFMPEG || "(not found — MKV/H.265 won't transcode)");
+  if (FFMPEG) console.log("   h264 encoder:", H264_ENCODER || "(none — install full ffmpeg from RPM Fusion)");
   console.log("   health:  curl http://127.0.0.1:" + PORT + "/health");
 });
 
 process.on("SIGINT", () => {
-  for (const [id, s] of sessions) { try { s.engine.destroy(); } catch (e) {} }
+  for (const [id, s] of sessions) { try { s.engine.destroy(); } catch (e) {} if (s.transcodePath) try { fs.unlinkSync(s.transcodePath); } catch (e) {} }
   process.exit(0);
 });
