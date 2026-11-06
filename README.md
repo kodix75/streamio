@@ -36,6 +36,7 @@ the **addons you choose** — Streamio ships with none, like a forest with no ro
 - 🎬 **works day one** — built‑in Cinemeta catalogs & search, playable trailers, series seasons & episodes
 - 🎁 **full addon cups** — paste any Stremio addon manifest URL: its catalogs sprout on home, its streams appear on details
 - 🕷 **every kind of stream** — direct files, `.m3u8` (HLS), YouTube, **torrents/magnets via WebTorrent** with a swarm watchdog (no more hanging on "connecting…")
+- 🎬 **films that actually play** — built-in **public domain cinema** rail (Internet Archive mp4s) streams directly in the browser: no peers, no debrid, no account
 - 🌱 **your library** — save with ♡, continue‑watching bar, all in localStorage; library renders as a **map of your grove** (POI bubbles + dotted trails)
 - 🎨 **Theme Studio** — 4 presets (rainforest · glade · pine · wildflower), accent picker, rain/rays/grain/fireflies toggles, vignette & motion switches, glow strength, card size, glass blur, serif/sans letters, custom wallpaper (`--wallpaper`/`assets/wall.jpg`)
 - 🌅 **hero checkpoint** — glowing ring dial + key/value HUD (story/year/grove/trail) + orb action buttons
@@ -100,7 +101,8 @@ CORS is open on Cinemeta & all addon hosts — it just works. Restart your serve
 | 🌿 **floating menu** | glass pill with ferns **overhanging its top edge** — the signature texture element; addon count pill updates on boot |
 | 🌫 **home** | glowing ring-dial hero of a random hit tonight, key/value HUD, "continue watching", trending movie & series rails, vine-threaded posters, your addon catalogs |
 | 🌲 **groves** | movies / series browsable by genre chips (catalog race fixed — clicks land reliably) |
-| 🌊 **streams panel** | every planted addon's offer with quality pills, first row highlighted as "quick trail" |
+| 🌊 **streams panel** | every planted addon's offer with quality pills, first row highlighted as "quick trail"; Internet Archive mp4s play directly |
+| 📼 **public domain cinema** | built-in rail of Internet Archive films — safe, legal, play in-browser with no peers/debrid |
 | 🌱 **addons drawer** | plant manifest URLs, unplant what's dead, see logos & descriptions |
 | ♡ **library** | saved posters render as a **grove map** — circular POI bubbles on dotted trails |
 | 🌧 **player** | HLS/WebTorrent/YouTube, 45 s swarm watchdog, esc folds the tent, progress saved |
@@ -118,6 +120,7 @@ Open **addons** in the menu and plant any stremio‑protocol manifest, for examp
 | `https://torrentio.strem.fun/manifest.json` | torrent/debrid streams for everything |
 | `https://v3-cinemeta.strem.io/manifest.json` | generic cinemeta addon formatting |
 | any manifest from [Stremio's addon docs](https://github.com/Stremio/stremio-addon-sdk) | catalogs, subtitles, streams… |
+| *(built-in)* Internet Archive (public domain cinema rail) | direct mp4s that play in-browser — no peers, no debrid |
 
 Streamio respects the addon protocol: `/catalog`, `/stream`, `/meta`, extra handling, CORS.
 Write your own in 20 minutes with the [addon SDK](https://github.com/Stremio/stremio-addon-sdk). 🕷

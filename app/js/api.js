@@ -142,6 +142,64 @@ export function streamTitle(s){
 }
 export function streamSource(s){ return s.source ?? s._addon?.name ?? "the forest" }
 
+/* ═══════════════════════════════════════════════════════════
+   INTERNET ARCHIVE — safe, public-domain cinema that plays in-browser
+   (direct mp4 streams, no peers, no debrid, no account)
+   ═══════════════════════════════════════════════════════════ */
+const ARCHIVE = "https://archive.org";
+const archiveMetaCache = new Map();
+
+export async function archiveCatalog(limit = 12){
+  const q = "mediatype:movies AND collection:feature_films";
+  const url = `${ARCHIVE}/advancedsearch.php?q=${encodeURIComponent(q)}&fl[]=identifier&fl[]=title&fl[]=description&rows=20&page=1&output=json&sort[]=downloads+desc`;
+  const d = await jget(url).catch(() => ({}));
+  const docs = d?.response?.docs ?? [];
+  // keep only items that actually carry a playable mp4 (verified per item)
+  const candidates = docs.map(x => ({
+    id: `ia:${x.identifier}`,
+    name: x.title || x.identifier,
+    type: "movie",
+    poster: `${ARCHIVE}/services/img/${x.identifier}`,
+    description: x.description,
+  }));
+  const checks = await Promise.all(candidates.map(async (c) => {
+    try{
+      const r = await archiveMeta(c.id);
+      return r.file ? c : null;
+    }catch(e){ return null }
+  }));
+  return checks.filter(Boolean).slice(0, limit);
+}
+
+export async function archiveMeta(id){
+  const ident = id.startsWith("ia:") ? id.slice(3) : id;
+  if (archiveMetaCache.has(ident)) return archiveMetaCache.get(ident);
+  const d = await jget(`${ARCHIVE}/metadata/${ident}`).catch(() => ({}));
+  const files = d.files || [];
+  const mp4s = files.filter(f => /\.mp4$/i.test(f.name) && (f.size || f.length));
+  const pick = mp4s.sort((a, b) => (+b.size || +b.length || 0) - (+a.size || +a.length || 0))[0];
+  const result = {
+    meta: {
+      id: `ia:${ident}`,
+      name: d.metadata?.title || ident,
+      type: "movie",
+      poster: `${ARCHIVE}/services/img/${ident}`,
+      background: `${ARCHIVE}/services/img/${ident}`,
+      description: (d.metadata?.description || "").replace(/<[^>]+>/g, "").slice(0, 600),
+    },
+    file: pick?.name || null,
+  };
+  archiveMetaCache.set(ident, result);
+  return result;
+}
+
+export async function archiveStreams(id){
+  const { file } = await archiveMeta(id);
+  const ident = id.startsWith("ia:") ? id.slice(3) : id;
+  if (!file) return [];
+  return [{ url: `${ARCHIVE}/download/${ident}/${encodeURIComponent(file)}`, name: file,
+            _addon: { name: "Internet Archive (public domain)" } }];
+}
 /* curated seedlings for the first planting */
 export const SEEDS = [
   {

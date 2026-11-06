@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls } from "./api.js";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams } from "./api.js";
 import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js";
 import { open as openPlayer } from "./player.js";
 
@@ -104,11 +104,12 @@ export async function homeView(root){
   root.innerHTML = `<div style="margin-top:96px">${railSection("the forest is waking…", skelCards(8))}</div>`;
   const hero = await heroMovie();
   if (root.dataset.nav !== nav) return;
-  const [movies, series, cont, addonCats] = await Promise.all([
+  const [movies, series, cont, addonCats, archive] = await Promise.all([
     cinemetaCatalog("movie").catch(() => []),
     cinemetaCatalog("series").catch(() => []),
     Promise.resolve(continueWatching()),
     addonCatalogs().catch(() => []),
+    archiveCatalog().catch(() => []),
   ]);
   if (root.dataset.nav !== nav) return;
   root.innerHTML = hero
@@ -119,6 +120,7 @@ export async function homeView(root){
         : "")
     + railSection("trending movies", movies.map(m => posterCard({ ...m, type:"movie" })).join(""), "#/browse/movie", "cinemeta · top")
     + railSection("trending series", series.map(m => posterCard({ ...m, type:"series" })).join(""), "#/browse/series", "cinemeta · top")
+    + (archive.length ? railSection("public domain cinema", archive.map(m => posterCard({ ...m, type:"movie" })).join(""), "", "archive.org · safe") : "")
     + addonCats.map((c, i) => `
       <section><div class="row-head"><div class="row-title"><h2>${esc(c.name)}</h2></div>
       <span class="row-kicker">from the addon ${esc(c.addon.name)}</span></div>
@@ -220,8 +222,15 @@ export async function openDetail(type, id){
   dlg.innerHTML = `<div style="padding:26px"><div class="poster skel" style="width:100%;aspect-ratio:2.4">.</div></div>`;
   dlg.showModal();
   let m;
-  try{ m = await meta(type, id) }
-  catch(e){ dlg.innerHTML = `<div style="padding:22px" class="empty"><div class="big">🌫️</div><p>couldn't reach the forest — the network muffled the call</p></div>`; return }
+  const isArchive = String(id).startsWith("ia:");
+  if (isArchive){
+    const r = await archiveMeta(id).catch(() => null);
+    if (!r){ dlg.innerHTML = `<div style="padding:22px" class="empty"><div class="big">🌫️</div><p>couldn't reach the archive — the network muffled the call</p></div>`; return }
+    m = r.meta;
+  } else {
+    try{ m = await meta(type, id) }
+    catch(e){ dlg.innerHTML = `<div style="padding:22px" class="empty"><div class="big">🌫️</div><p>couldn't reach the forest — the network muffled the call</p></div>`; return }
+  }
 
   const vids = m.videos ?? [];
   const seasons = [...new Set(vids.map(v => v.season))].filter(s => s != null).sort((a,b) => a - b);
@@ -304,7 +313,8 @@ function drawEpisodes(dlg, m, seasons, picked = seasons[0]){
 async function paintStreams(zone, type, id, title, refMeta){
   window.streamioRefMeta ??= {};
   window.streamioRefMeta[id] = refMeta;
-  if (addonUrls().length === 0){
+  const isArchive = String(id).startsWith("ia:");
+  if (!isArchive && addonUrls().length === 0){
     zone.innerHTML = `<div class="empty" style="margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:16px">
       🌊 <b>no stream addons planted yet.</b><br>
       press <code>addons</code> in the menu and plant one — e.g.
@@ -313,7 +323,9 @@ async function paintStreams(zone, type, id, title, refMeta){
   }
   zone.innerHTML = `<div class="streams"><div class="stream skel">.</div><div class="stream skel">.</div><div class="stream skel">.</div></div>`;
   let list = [];
-  try{ list = await streams(type, id) }catch(e){ console.warn(e) }
+  try{
+    list = isArchive ? await archiveStreams(id) : await streams(type, id)
+  }catch(e){ console.warn(e) }
   if (!list.length){
     zone.innerHTML = `<div class="empty" style="margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:16px">
       🌊 your addons offered no streams for <b>${esc(title)}</b> — try another addon or another fog-layer 🍃</div>`;
