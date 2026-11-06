@@ -46,7 +46,7 @@
 .grid .card{width:auto}
 
 /* ── detail dialog ───────────────────────────────────────── */
-#detail{padding:0; overflow:hidden; max-width:900px; width:min(95vw,900px)}
+#detail{padding:0; overflow:auto; max-width:900px; width:min(95vw,900px); max-height:85vh;}
 .d-hero{position:relative; aspect-ratio:16/7; min-height:230px}
 .d-hero img.bgback{
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover;

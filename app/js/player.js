@@ -2,7 +2,7 @@
    STREAMIO · player.js — hls · direct files · webtorrent · yt
    grows whatever stream the addons hand it
    ═══════════════════════════════════════════════════════════ */
-import { saveProgress, getProgress } from "./library.js?v=4";
+import { saveProgress, getProgress } from "./library.js?v=5";
 
 const cdn = (src) => new Promise((ok, fail) => {
   if (document.querySelector(`script[data-cdn="${src}"]`)) return ok();
@@ -24,6 +24,9 @@ export function open({ kind, src, title, ref, provider }){
   player.classList.remove("yt-main","video-main");
   elStatus().classList.add("hidden");
   document.body.classList.add("watching");
+  /* fold the detail dialog behind the player */
+  const dlg = document.getElementById("detail");
+  if (dlg && dlg.open) dlg.close();
   const titleEl = document.getElementById("playerTitle");
   if (titleEl) titleEl.textContent = title ?? "now playing";
 

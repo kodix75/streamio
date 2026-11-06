@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · main.js — routes, nav, addons, delegation
    ═══════════════════════════════════════════════════════════ */
-import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js?v=4";
-import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl, addonCollection } from "./api.js?v=4";
-import { toggleSaved } from "./library.js?v=4";
-import * as player from "./player.js?v=4";
+import { homeView, browseView, searchView, libraryView, openDetail, $, $$, wireStreams, esc } from "./ui.js?v=5";
+import { addonUrls, setAddonUrls, loadManifest, SEEDS, backendUrl, setBackendUrl, addonCollection } from "./api.js?v=5";
+import { toggleSaved } from "./library.js?v=5";
+import * as player from "./player.js?v=5";
 
 const root = $("#view");
 
@@ -14,9 +14,6 @@ async function route(){
   const h = location.hash || "#/home";
   const [, seg, ...rest] = h.split("/");
   root.dataset.nav = String(++NAV);
-  $$("#navLinks a").forEach(a =>
-    a.classList.toggle("on", h.startsWith(`#${ seg }`)));
-
   /* leaving a detail route should fold the detail overlay (browser-back etc.) */
   if (!h.startsWith("#/detail/")){ const d = $("#detail"); if (d.open) d.close(); }
 
@@ -38,6 +35,11 @@ async function route(){
 }
 window.addEventListener("hashchange", route);
 
+/* close the detail dialog when a nav link is clicked */
+$$("#navLinks a").forEach(a => a.addEventListener("click", () => {
+  const d = $("#detail"); if (d.open) d.close();
+}));
+
 /* ── search ──────────────────────────────────────────────── */
  $("#q").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.value.trim()){
@@ -49,6 +51,9 @@ window.addEventListener("hashchange", route);
 /* ── global click delegation ─────────────────────────────── */
 document.addEventListener("click", async (e) => {
   const t = e.target;
+
+  /* click on the detail dialog's own backdrop closes it */
+  if (t === $("#detail")) { $("#detail").close(); return; }
 
   const closeBtn = t.closest("[data-close]");
   if (closeBtn){

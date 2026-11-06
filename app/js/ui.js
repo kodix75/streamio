@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl } from "./api.js?v=4";
-import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=4";
-import { open as openPlayer } from "./player.js?v=4";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl } from "./api.js?v=5";
+import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=5";
+import { open as openPlayer } from "./player.js?v=5";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
