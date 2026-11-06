@@ -358,11 +358,15 @@ export function wireStreams(box){
     // torrents: prefer the local backend (real BitTorrent peers) when available
     if (b.dataset.kind === "torrent" && (await backendAvailable().catch(()=>false))){
       const btn = b;
-      const orig = btn.innerHTML;
       btn.style.opacity = ".6"; btn.style.pointerEvents = "none";
+      openPlayer({ kind: "file", src: "", ref: b.dataset.ref, title: b.dataset.title });
+      const statusEl = document.getElementById("playerStatus");
+      if (statusEl){ statusEl.textContent = "🌿 growing the torrent via the local backend…"; statusEl.classList.remove("hidden"); }
       try{
         const info = await backendPlay(b.dataset.src);
-        openPlayer({ kind: "file", src: info.streamUrl, ref: b.dataset.ref, title: b.dataset.title });
+        const video = document.getElementById("video");
+        if (video){ video.src = info.streamUrl; video.play().catch(()=>{}); }
+        const st = document.getElementById("playerStatus"); if (st){ st.textContent = ""; st.classList.add("hidden"); }
       }catch(e){
         console.warn("backend play failed, falling back to webtorrent", e);
         openPlayer({ kind: "torrent", src: b.dataset.src, ref: b.dataset.ref, title: b.dataset.title });
