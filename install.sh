@@ -131,36 +131,70 @@ src="$(find "$tmp" -maxdepth 1 -type d ! -path "$tmp" | head -1)"
 [ -n "$src" ] || die "downloaded archive looks wrong"
 
 mkdir -p "$STREAMIO_HOME"
-rm -rf "$STREAMIO_HOME/app.new" "$STREAMIO_HOME/app.old"
+rm -rf "$STREAMIO_HOME/app.new" "$STREAMIO_HOME/app.old" "$STREAMIO_HOME/server.new" "$STREAMIO_HOME/server.old"
 cp -r "$src" "$STREAMIO_HOME/app.new"
 if [ -d "$STREAMIO_HOME/app" ]; then mv "$STREAMIO_HOME/app" "$STREAMIO_HOME/app.old"; fi
 mv "$STREAMIO_HOME/app.new" "$STREAMIO_HOME/app"
 rm -rf "$STREAMIO_HOME/app.old"
+# backend (optional but recommended — makes torrents play)
+if [ -d "$src/../server" ]; then
+  cp -r "$src/../server" "$STREAMIO_HOME/server.new"
+  if [ -d "$STREAMIO_HOME/server" ]; then mv "$STREAMIO_HOME/server" "$STREAMIO_HOME/server.old"; fi
+  mv "$STREAMIO_HOME/server.new" "$STREAMIO_HOME/server"
+  rm -rf "$STREAMIO_HOME/server.old"
+fi
 ensure_wall
 
-# ---- launcher: serves the app, opens the browser, manages the forest ----
+# ---- launcher: starts backend (torrents) + web server, opens the browser ----
 mkdir -p "$HOME/.local/bin"
-cat > "$STREAMIO_BIN" <<EOF
+cat > "$STREAMIO_BIN" <<'LAUNCHER'
 #!/usr/bin/env bash
-# 🌿 streamio launcher
-STREAMIO_HOME="\$HOME/.streamio"
-PORT="\${STREAMIO_PORT:-8477}"
+# 🌿 streamio launcher — starts the backend + web app together
+STREAMIO_HOME="$HOME/.streamio"
+PORT="${STREAMIO_PORT:-8477}"
+BPORT="${STREAMIO_BACKEND_PORT:-7000}"
 
-case "\${1:-}" in
-  --port)  [ -n "\${2:-}" ] && PORT="\$2" ;;
-  --stop)  [ -f "\$STREAMIO_HOME/.pid" ] && kill "\$(cat "\$STREAMIO_HOME/.pid")" 2>/dev/null; echo "streamio stopped"; exit 0 ;;
-  --uninstall) exec bash -c 'curl -fsSL https://raw.githubusercontent.com/${STREAMIO_REPO}/main/install.sh | bash -s -- --uninstall' ;;
+case "${1:-}" in
+  --port)         [ -n "${2:-}" ] && PORT="$2" ;;
+  --backend-port) [ -n "${2:-}" ] && BPORT="$2" ;;
+  --stop)
+    for f in "$STREAMIO_HOME/.pid" "$STREAMIO_HOME/.bpid"; do
+      [ -f "$f" ] && kill "$(cat "$f")" 2>/dev/null || true
+      rm -f "$f"
+    done
+    pkill -f "$STREAMIO_HOME/server/index.js" 2>/dev/null || true
+    echo "streamio stopped (web + backend)"; exit 0 ;;
+  --uninstall) exec bash -c 'curl -fsSL https://raw.githubusercontent.com/STREAMIO_REPO_PLACEHOLDER/main/install.sh | bash -s -- --uninstall' ;;
 esac
 
-if [ -f "\$STREAMIO_HOME/.pid" ] && kill -0 "\$(cat "\$STREAMIO_HOME/.pid")" 2>/dev/null; then
-  echo "🐍 streamio is already awake at http://127.0.0.1:\$PORT — just open the tab."
+# already running?
+if [ -f "$STREAMIO_HOME/.pid" ] && kill -0 "$(cat "$STREAMIO_HOME/.pid")" 2>/dev/null; then
+  echo "🐍 streamio is already awake at http://127.0.0.1:$PORT — just open the tab."
   exit 0
 fi
 
+# start backend (optional, only if node + server/ exist)
+if command -v node >/dev/null 2>&1 && [ -f "$STREAMIO_HOME/server/index.js" ]; then
+  if [ ! -d "$STREAMIO_HOME/server/node_modules" ]; then
+    (cd "$STREAMIO_HOME/server" && npm install --silent --no-audit --no-fund >/dev/null 2>&1) || true
+  fi
+  if [ -d "$STREAMIO_HOME/server/node_modules" ]; then
+    (cd "$STREAMIO_HOME/server" && STREAMIO_PORT="$PORT" PORT="$BPORT" exec node index.js) \
+      >"$STREAMIO_HOME/backend.log" 2>&1 &
+    BPID=$!
+    echo "$BPID" > "$STREAMIO_HOME/.bpid"
+    # wait for health
+    for i in 1 2 3 4 5 6 7 8; do
+      curl -sf "http://127.0.0.1:$BPORT/health" >/dev/null 2>&1 && break
+      sleep 0.4
+    done
+  fi
+fi
+
 serve() {
-  cd "\$STREAMIO_HOME/app"
-  if command -v python3 >/dev/null 2>&1; then exec python3 -m http.server "\$PORT" --bind 127.0.0.1
-  elif command -v python >/dev/null 2>&1;  then exec python  -m http.server "\$PORT" --bind 127.0.0.1
+  cd "$STREAMIO_HOME/app"
+  if command -v python3 >/dev/null 2>&1; then exec python3 -m http.server "$PORT" --bind 127.0.0.1
+  elif command -v python >/dev/null 2>&1;  then exec python  -m http.server "$PORT" --bind 127.0.0.1
   else exec node -e '
     const h=require("http"),f=require("fs"),p=require("path");
     process.chdir(process.argv[1]);
@@ -171,21 +205,23 @@ serve() {
         const ext=p.extname(p0); const m={".html":"text/html",".js":"text/javascript",".css":"text/css",".svg":"image/svg+xml",".png":"image/png",".jpg":"image/jpeg",".woff2":"font/woff2",".json":"application/json"};
         s.writeHead(200, {"Content-Type": m[ext]||"application/octet-stream"}); s.end(d);
       }});
-    }).listen(process.env.STREAMIO_PORT||8477,"127.0.0.1");' "\$STREAMIO_HOME/app"
+    }).listen(process.env.STREAMIO_PORT||8477,"127.0.0.1");' "$STREAMIO_HOME/app"
   fi
 }
 
 serve &
-PID=\$!
-echo "\$PID" > "\$STREAMIO_HOME/.pid"
+PID=$!
+echo "$PID" > "$STREAMIO_HOME/.pid"
 sleep 0.6
-URL="http://127.0.0.1:\$PORT"
-if command -v xdg-open >/dev/null 2>&1; then xdg-open "\$URL" >/dev/null 2>&1 & 
-elif command -v open >/dev/null 2>&1; then open "\$URL" >/dev/null 2>&1 &
+URL="http://127.0.0.1:$PORT"
+if command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1 &
+elif command -v open >/dev/null 2>&1; then open "$URL" >/dev/null 2>&1 &
 fi
-echo "🦋 streamio is live → \$URL   (streamio --stop to fold the tent)"
-wait "\$PID"
-EOF
+echo "🦋 streamio is live → $URL   (streamio --stop to fold the tent)"
+wait "$PID"
+LAUNCHER
+# fix the repo placeholder
+sed -i "s#STREAMIO_REPO_PLACEHOLDER#${STREAMIO_REPO}#g" "$STREAMIO_BIN"
 chmod +x "$STREAMIO_BIN"
 case ":$PATH:" in *":$HOME/.local/bin:"*) : ;; *) warn "$HOME/.local/bin is not on your PATH — run:  export PATH=\$PATH:$HOME/.local/bin  (and add it to your shell rc)";; esac
 

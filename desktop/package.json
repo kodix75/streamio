@@ -1,7 +1,7 @@
 {
   "name": "streamio",
   "productName": "Streamio",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "A media center for the forest — movies & series from community addons.",
   "main": "main.js",
   "author": "aidan Genoud (kodix75)",
@@ -20,7 +20,7 @@
     "productName": "Streamio",
     "directories": { "output": "out" },
     "files": ["main.js"],
-    "extraFiles": [{ "from": "../app", "to": "app" }],
+    "extraFiles": [{ "from": "../app", "to": "app" }, { "from": "../server", "to": "server" }],
     "linux": {
       "target": ["AppImage", "deb"],
       "category": "AudioVideo;Video",

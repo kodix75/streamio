@@ -90,7 +90,11 @@
       </div>
     </details>
     <details class="debrid-box">
-      <summary>⚙️ playback engine — local backend for torrents (any film)</summary>
+      <summary>🌱 suggested addons — plant more sources</summary>
+      <p class="muted small">Well-known community addons. Click <b>plant</b> to try one — if it doesn't sprout,
+        the host is unreachable from your network (some are geo-blocked).</p>
+      <div id="suggestedAddons" class="addon-list"></div>
+    </details>
       <p class="muted small">Run <code>cd server && npm install && npm start</code> (Node 18+) to turn any magnet into
         an HTTP stream with seeking. Point Streamio at it below. Falls back to in-browser WebTorrent if offline.</p>
       <div class="add-row">
@@ -172,6 +176,9 @@
     <div class="dlg-head"><h2>🧺 first light in the forest</h2><button class="icon-btn" data-close title="close">✕</button></div>
     <p style="line-height:1.75" class="muted">Streamio ships with <b>no sources</b> — the woods are yours to plant.
       Catalogs &amp; metadata are built-in (Cinemeta). For real streams, plant a community addon:</p>
+    <p class="muted small">Want modern films? Plant <b>Torrentio</b> + a <b>debrid</b> key (Real-Debrid/AllDebrid)
+      in the addons drawer, or run the <b>local backend</b> (<code>cd server && npm start</code>) — torrents then
+      play as direct files. The built-in <b>public domain cinema</b> rail plays real films with no account. 🍄</p>
     <div id="seedList" class="addon-list"></div>
     <div class="dlg-foot" style="display:flex;gap:10px;margin-top:14px">
       <button id="plantAll" class="btn">🌱 plant the basics</button>

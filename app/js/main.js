@@ -109,12 +109,49 @@ $("#addonsBtn").onclick = () => {
       $("#backendStatus").textContent = r.ok ? `✓ connected — ${d.service || "ok"} (${d.sessions ?? 0} sessions)` : `✗ ${r.status}`;
     }catch(e){ $("#backendStatus").textContent = `✗ offline (${e.message})` }
   };}
+  renderSuggested();
   renderAddonList(); dlg.showModal() 
 };
 $("#addonAdd").onclick = doPlant;
 $("#addonUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") doPlant() });
 
-/* debrid quick-plant: turn a personal API key into a working addon */
+/* suggested addons (well-known community manifests) */
+const SUGGESTED = [
+  { name: "Kitsu (anime)", url: "https://kitsu.strem.io/manifest.json" },
+  { name: "OpenSubtitles", url: "https://opensubtitles.strem.io/manifest.json" },
+  { name: "ThePirateBay", url: "https://thepiratebay.strem.io/manifest.json" },
+  { name: "YTS (movies)", url: "https://yts.strem.io/manifest.json" },
+  { name: "EZTV (series)", url: "https://eztv.strem.io/manifest.json" },
+  { name: "TMDB", url: "https://tmdb.strem.io/manifest.json" },
+  { name: "WatchHub", url: "https://watchhub.strem.io/manifest.json" },
+  { name: "YouTube", url: "https://youtube.strem.io/manifest.json" },
+];
+function renderSuggested(){
+  const box = $("#suggestedAddons"); if (!box) return;
+  const planted = addonUrls();
+  box.innerHTML = SUGGESTED.map(s => {
+    const isPlanted = planted.includes(s.url);
+    return `<div class="addon"><div class="meta"><div class="nm">${esc(s.name)}</div>
+      <div class="ds">${esc(s.url)}</div></div>
+      <button class="icon-btn ${isPlanted ? "rm" : ""}" data-sug="${esc(s.url)}">
+        ${isPlanted ? "unplant 🍂" : "plant 🌱"}</button></div>`;
+  }).join("");
+  $$("#suggestedAddons [data-sug]").forEach(b => b.onclick = async () => {
+    const u = b.dataset.sug;
+    if (addonUrls().includes(u)){
+      setAddonUrls(addonUrls().filter(x => x !== u));
+      renderAddonList(); renderSuggested(); route();
+    } else {
+      b.textContent = "planting…";
+      try{
+        const m = await loadManifest(u);
+        setAddonUrls([...addonUrls(), u]);
+        b.textContent = `🌿 ${m.name}`;
+        renderAddonList(); renderSuggested();
+      }catch(err){ b.textContent = "didn't sprout 🍂" }
+    }
+  });
+}
 const debridPlantBtn = $("#debridPlant");
 if (debridPlantBtn) debridPlantBtn.onclick = async () => {
   const key = $("#debridKey").value.trim();

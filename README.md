@@ -71,6 +71,9 @@ streamio        # launches the AppImage from ~/.local/bin
 or grab **`Streamio-0.1.0.AppImage`** from [Releases](https://github.com/kodix75/streamio/releases),
 `chmod +x` it and double‑click. `.deb` is built alongside for Debian crowd. 🐧
 
+> The desktop app **spawns the local backend automatically** (if Node is installed) so torrents play
+> out of the box — no separate terminal.
+
 ### ▸ build yourself (electron, from source)
 
 ```bash
