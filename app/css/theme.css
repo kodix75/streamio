@@ -230,22 +230,61 @@ dialog{
 dialog::backdrop{background:rgba(2,8,5,.72); backdrop-filter:blur(var(--glass-b,6px))}
 .dlg-head{display:flex; align-items:center; justify-content:space-between}
 
-/* ── player ──────────────────────────────────────────────── */
+/* ── player — cinematic, glass, ambient ──────────────────── */
+body.watching .menu-wrap,
+body.watching footer{opacity:0; pointer-events:none; transition:opacity .35s ease}
+body.watching main{filter:blur(6px) brightness(.55); transition:filter .4s ease; pointer-events:none}
 .player{
-  position:fixed; inset:0; z-index:60; background:rgba(2,7,4,.96);
-  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px;
-  padding:26px; backdrop-filter:blur(var(--glass-b,8px));
+  position:fixed; inset:0; z-index:60; background:rgba(2,7,4,.94);
+  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px;
+  padding:22px; backdrop-filter:blur(var(--glass-b,10px));
+  animation:playerIn .45s cubic-bezier(.2,.9,.25,1.1) both;
 }
-.player video,.player iframe{
-  width:min(96vw,1400px); aspect-ratio:16/9; max-height:84vh; border-radius:18px;
-  background:#000; box-shadow:0 30px 90px rgba(0,0,0,.8), 0 0 0 1px var(--line);
-}
-.player iframe{border:0}
+@keyframes playerIn{from{opacity:0; transform:scale(1.04)} to{opacity:1; transform:none}}
 .player.hidden{display:none}
-.player .icon-btn{position:fixed; top:18px; right:18px; z-index:2}
+.player-ambient{position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(60% 50% at 50% 40%, color-mix(in oklab, var(--glow) 18%, transparent), transparent 70%),
+    radial-gradient(40% 40% at 80% 70%, color-mix(in oklab, var(--moss) 12%, transparent), transparent 70%);
+  animation:ambientPulse 6s ease-in-out infinite alternate;
+  filter:blur(20px); opacity:.9}
+@keyframes ambientPulse{from{transform:scale(1); opacity:.7} to{transform:scale(1.12); opacity:1}}
+.player-top{position:relative; z-index:2; width:min(96vw,1400px); display:flex; align-items:center;
+  justify-content:space-between; gap:12px; margin-bottom:6px}
+.player-title{font-family:var(--serif); font-style:italic; font-size:clamp(16px,2vw,22px);
+  color:var(--text); letter-spacing:.4px; text-shadow:0 2px 14px rgba(0,0,0,.6);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70%}
+.player-top-actions{display:flex; gap:8px}
+.player-btn{
+  background:var(--glass); border:1px solid var(--line); color:var(--text);
+  border-radius:999px; padding:7px 12px; cursor:pointer; font:inherit; font-size:13px;
+  backdrop-filter:blur(var(--glass-b,10px)); transition:.18s ease;
+  display:inline-flex; align-items:center; justify-content:center; min-width:34px;
+}
+.player-btn:hover{border-color:color-mix(in oklab, var(--glow) 45%, var(--line)); color:var(--glow);
+  transform:translateY(-1px)}
+.player-close{font-weight:800}
+.player-stage{position:relative; z-index:1; width:min(96vw,1400px); aspect-ratio:16/9; max-height:78vh;
+  border-radius:18px; overflow:hidden; background:#000;
+  box-shadow:0 30px 90px rgba(0,0,0,.85), 0 0 0 1px var(--line),
+             0 0 60px color-mix(in oklab, var(--glow) 18%, transparent)}
+.player-stage video,.player-stage iframe{width:100%; height:100%; border:0; display:block; background:#000}
 #player.video-main iframe{display:none}
 #player.yt-main video{display:none}
-.player-status{position:absolute; bottom:30px; color:var(--text-dim); font-size:14px}
+.player-status{position:absolute; bottom:18px; left:50%; translate:-50% 0; z-index:3;
+  color:var(--text-dim); font-size:13px; padding:6px 14px; border-radius:999px;
+  background:rgba(5,13,8,.7); border:1px solid var(--line); backdrop-filter:blur(8px);
+  white-space:nowrap; max-width:90%; overflow:hidden; text-overflow:ellipsis}
+.player-bar{position:relative; z-index:2; width:min(96vw,1400px); display:flex; align-items:center;
+  gap:10px; padding:8px 4px; flex-wrap:wrap}
+.player-seek{flex:1 1 200px; height:6px; border-radius:99px; background:rgba(255,255,255,.12);
+  cursor:pointer; position:relative; overflow:hidden; min-width:120px}
+.player-seek-fill{height:100%; width:0%; border-radius:99px;
+  background:linear-gradient(90deg, var(--moss), var(--glow)); box-shadow:0 0 10px var(--glow)}
+.player-time{font:700 11.5px/1 var(--sans); color:var(--text-dim); white-space:nowrap; min-width:96px; text-align:center}
+.player-vol{width:80px; accent-color:var(--glow); height:4px}
+.player-hints{position:relative; z-index:2; font:600 10px/1.6 var(--sans); letter-spacing:.18em;
+  text-transform:uppercase; color:var(--text-dim); opacity:.7; text-align:center}
 
 /* ── skeleton mist loading ───────────────────────────────── */
 .skel{

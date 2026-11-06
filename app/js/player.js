@@ -23,12 +23,15 @@ export function open({ kind, src, title, ref, provider }){
   player.classList.remove("hidden");
   player.classList.remove("yt-main","video-main");
   elStatus().classList.add("hidden");
+  document.body.classList.add("watching");
+  const titleEl = document.getElementById("playerTitle");
+  if (titleEl) titleEl.textContent = title ?? "now playing";
 
   /* yt iframe lives in DOM always; toggle classes */
   if (kind === "yt"){
     player.classList.add("yt-main");
     yt.classList.remove("hidden");
-    yt.src = src.startsWith("yt:") ? `https://www.youtube-nocookie.com/embed/${src.slice(3)}?autoplay=1`
+    yt.src = src.startsWith("yt:") ? `https://www.youtube-nocookie.com/embed/${src.slice(3)}?autoplay=1&rel=0`
                                    : src.replace(/^.*\/embed\//, "").replace(/^.*watch\?v=/, "").replace(/^.*youtu\.be\//, "");
     return;
   }
@@ -44,15 +47,15 @@ export function open({ kind, src, title, ref, provider }){
       video.onerror = null;
       if (window.Hls.isSupported()){
         const hls = new window.Hls(); hls.loadSource(src); hls.attachMedia(video);
-        hls.on(window.Hls.Events.MANIFEST_PARSED, () => { video.currentTime = startAt; video.play() });
-      } else { video.src = src; video.currentTime = startAt; video.play() }
+        hls.on(window.Hls.Events.MANIFEST_PARSED, () => { video.currentTime = startAt; video.play().catch(()=>{}) });
+      } else { video.src = src; video.currentTime = startAt; video.play().catch(()=>{}) }
     }).catch(err);
   } else if (kind === "file"){
     video.src = src; video.addEventListener("loadedmetadata", function once(){
       video.removeEventListener("loadedmetadata", once); video.currentTime = startAt;
-    }); video.play();
+    }); video.play().catch(()=>{});
   } else if (kind === "torrent"){
-    torrent(src, video, title);
+    torrent(src, video, title, ref);
   }
   video.dataset.ref = ref || "";
   video.dataset.kind = kind;
@@ -75,7 +78,7 @@ const ensureTrackers = (id, title) => {
   return m;
 };
 
-async function torrent(torrentId, video, title){
+async function torrent(torrentId, video, title, ref){
   status("🌿 waking webtorrent…");
   /* v2 ships as ESM — import it properly, fall back to the UMD v1 build */
   try{
@@ -119,7 +122,11 @@ async function torrent(torrentId, video, title){
   watchdog = setTimeout(() => {
     if (gaveUp || (t && (t.progress > 0 || t.metadata))) return;
     gaveUp = true;
-    status("the swarm went quiet — browser-edition needs webRTC friends for this one. try another stream, or the trailer 🍄");
+    status("the swarm went quiet — browser-edition needs webRTC friends for this one. trying the trailer instead… 🍄");
+    const trailer = window.streamioRefMeta?.[ref]?.trailer;
+    if (trailer){
+      setTimeout(() => open({ kind: "yt", src: trailer, title: `${title} · trailer` }), 900);
+    }
   }, 45000);
 }
 
@@ -135,13 +142,72 @@ export function close(){
   document.title = "Streamio 🌿 — a media center for the forest";
 }
 
+/* ── custom controls + keyboard ──────────────────────────── */
+function setupPlayerControls(){
+  const video = elVideo();
+  const player = elPlayer();
+  if (!video || !player) return;
+  const fsBtn = player.querySelector("[data-fullscreen]");
+  const pipBtn = player.querySelector("[data-pip]");
+  const muteBtn = document.getElementById("muteBtn");
+  const vol = document.getElementById("playerVol");
+  const skipBack = document.getElementById("skipBack");
+  const skipFwd = document.getElementById("skipFwd");
+  const playPause = document.getElementById("playPause");
+  const seek = document.getElementById("playerSeek");
+  const seekFill = document.getElementById("playerSeekFill");
+  const timeEl = document.getElementById("playerTime");
+
+  const fmt = (s) => { s = Math.max(0, s | 0); const m = (s / 60) | 0; return m + ":" + String(s % 60).padStart(2, "0") };
+  const sync = () => {
+    if (!video.duration || isNaN(video.duration)) return;
+    if (seekFill) seekFill.style.width = ((video.currentTime / video.duration) * 100) + "%";
+    if (timeEl) timeEl.textContent = fmt(video.currentTime) + " / " + fmt(video.duration);
+    if (playPause) playPause.textContent = video.paused ? "▶" : "⏸";
+    if (muteBtn) muteBtn.textContent = (video.muted || video.volume === 0) ? "🔇" : "🔊";
+  };
+  video.addEventListener("timeupdate", sync);
+  video.addEventListener("play", sync);
+  video.addEventListener("pause", sync);
+  video.addEventListener("loadedmetadata", sync);
+  video.addEventListener("volumechange", sync);
+
+  playPause?.addEventListener("click", () => { if (video.paused) video.play().catch(()=>{}); else video.pause() });
+  muteBtn?.addEventListener("click", () => { video.muted = !video.muted });
+  vol?.addEventListener("input", (e) => { video.volume = +e.target.value; video.muted = false });
+  skipBack?.addEventListener("click", () => { video.currentTime = Math.max(0, video.currentTime - 10) });
+  skipFwd?.addEventListener("click", () => { video.currentTime = Math.min(video.duration || 0, video.currentTime + 10) });
+  seek?.addEventListener("click", (e) => {
+    if (!video.duration) return;
+    const r = seek.getBoundingClientRect();
+    video.currentTime = ((e.clientX - r.left) / r.width) * video.duration;
+  });
+  fsBtn?.addEventListener("click", () => {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else player.requestFullscreen?.();
+  });
+  pipBtn?.addEventListener("click", async () => {
+    try{ if (document.pictureInPictureElement) await document.exitPictureInPicture();
+         else await video.requestPictureInPicture() } catch(e){}
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (player.classList.contains("hidden")) return;
+    const tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "f" || e.key === "F"){ e.preventDefault(); fsBtn?.click() }
+    else if (e.key === "m" || e.key === "M"){ e.preventDefault(); muteBtn?.click() }
+    else if (e.key === "ArrowLeft"){ e.preventDefault(); skipBack?.click() }
+    else if (e.key === "ArrowRight"){ e.preventDefault(); skipFwd?.click() }
+  });
+}
 /* autosave progress every ~8s while watching native video */
 setInterval(() => {
   const v = elVideo();
   const openPlayer = !elPlayer().classList.contains("hidden");
   if (openPlayer && v.duration && v.currentTime && !isNaN(v.duration)){
     const r = v.dataset.ref;
-    const metaSnap = window.streamioRefMeta?.[r];   /* set when opening from detail */
+    const metaSnap = window.streamioRefMeta?.[r];
     saveProgress(r, v.currentTime, v.duration, metaSnap || undefined);
   }
 }, 8000);

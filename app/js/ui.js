@@ -56,7 +56,10 @@ async function heroMovie(){
   if (!withPoster.length) return "";
   const pick = withPoster[Math.floor(Math.random() * Math.min(24, withPoster.length))];
   const full = await meta("movie", pick.id).catch(() => ({ ...pick, type: "movie" }));
-  const yt = full.trailer?.startsWith("yt:") ? full.trailer : null;
+  const yt = (full.trailerStreams && full.trailerStreams[0]?.ytId)
+    ? `yt:${full.trailerStreams[0].ytId}`
+    : (full.trailers?.find(t => /trailer/i.test(t.type || ""))?.source
+        ? `yt:${full.trailers.find(t => /trailer/i.test(t.type || "")).source}` : null);
   const genres = Array.isArray(full.genre) ? full.genre.slice(0, 3) : [];
   const kv = [
     full.imdbRating ? ["story", `<span class="rating">${star} ${esc(full.imdbRating)}</span>`] : null,
@@ -84,7 +87,7 @@ async function heroMovie(){
         <p class="hero-sub">${esc(full.description)}</p>
         <div class="hero-actions">
           ${yt ? `<button class="orb-action primary" data-trailer="${esc(yt)}" data-tname="${esc(full.name)}">
-                    <i class="oa-ic">▶</i><span class="oa-txt"><b>watch trailer</b><small>youtube · the fireflies glow</small></span></button>` : ""}
+                    <i class="oa-ic">▶</i><span class="oa-txt"><b>play trailer</b><small>youtube · the fireflies glow</small></span></button>` : ""}
           <a class="orb-action" href="#/detail/${esc(full.type ?? "movie")}/${esc(full.id)}">
                     <i class="oa-ic">🌳</i><span class="oa-txt"><b>where to watch</b><small>every grove · all the sources</small></span></a>
         </div>
@@ -222,7 +225,10 @@ export async function openDetail(type, id){
 
   const vids = m.videos ?? [];
   const seasons = [...new Set(vids.map(v => v.season))].filter(s => s != null).sort((a,b) => a - b);
-  const ytT = m.trailer?.startsWith("yt:") ? m.trailer : null;
+  const ytT = (m.trailerStreams && m.trailerStreams[0]?.ytId)
+    ? `yt:${m.trailerStreams[0].ytId}`
+    : (m.trailers?.find(t => /trailer/i.test(t.type || ""))?.source
+        ? `yt:${m.trailers.find(t => /trailer/i.test(t.type || "")).source}` : null);
   const genres = (m.genres ?? (Array.isArray(m.genre) ? m.genre : [])).slice(0, 5);
 
   dlg.innerHTML = `
@@ -241,8 +247,8 @@ export async function openDetail(type, id){
         </div>
         <p class="d-desc">${esc(m.description)}</p>
         <div class="d-actions">
-          ${ytT || (m.videos ?? []).length || true ? `<button class="btn" data-pick id="primaryWatch">▶ watch</button>` : ""}
-          ${ytT ? `<button class="btn ghost" data-trailer="${esc(ytT)}" data-tname="${esc(m.name)}">🎬 trailer</button>` : ""}
+          ${ytT ? `<button class="btn" data-trailer="${esc(ytT)}" data-tname="${esc(m.name)}">▶ play trailer</button>` : ""}
+          <button class="btn ${ytT ? "ghost" : ""}" data-pick id="primaryWatch">🌊 where to watch</button>
           <button class="btn ghost" data-save="${esc(m.id)}" data-snap="${esc(JSON.stringify({ id:m.id, name:m.name, type, poster:m.poster }))}">${isSaved(m.id) ? "♥ saved" : "♡ save"}</button>
         </div>
         <div id="streamZone"></div>
@@ -262,7 +268,7 @@ export async function openDetail(type, id){
 
   const zone = $("#streamZone", dlg);
   if (type === "movie"){
-    await paintStreams(zone, type, m.id, m.name, { name: m.name, poster: m.poster, type });
+    await paintStreams(zone, type, m.id, m.name, { name: m.name, poster: m.poster, type, trailer: ytT });
   }
   if (type === "series" && seasons.length){
     drawEpisodes(dlg, m, seasons);

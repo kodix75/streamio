@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/theme.css"/>
-  <link rel="stylesheet" href="css/menu.css"/>
-  <link rel="stylesheet" href="css/cards.css"/>
+  <link rel="stylesheet" href="css/theme.css?v=2"/>
+  <link rel="stylesheet" href="css/menu.css?v=2"/>
+  <link rel="stylesheet" href="css/cards.css?v=2"/>
 </head>
 <body>
   <!-- ══ ambient forest ══ -->
@@ -69,6 +69,8 @@
     <p class="muted small">Streamio speaks the
       <a href="https://github.com/Stremio/stremio-addon-sdk" target="_blank" rel="noopener">Stremio addon protocol</a> —
       paste any addon manifest URL and its catalogs &amp; streams sprout here.</p>
+    <p class="muted small">Torrent streams need webRTC peers (or a debrid addon like Real‑Debrid/AllDebrid) to actually play in a browser —
+      the player falls back to the trailer when a swarm stays quiet. 🍄</p>
     <div class="add-row">
       <input id="addonUrl" type="url" placeholder="https://…/manifest.json (or stremio://… )"/>
       <button id="addonAdd" class="btn">Plant it</button>
@@ -158,11 +160,31 @@
   <dialog id="detail"></dialog>
 
   <!-- ══ player overlay ══ -->
-  <div id="player" class="player hidden">
-    <button class="player-close icon-btn" data-close title="back to the forest (esc)">✕ back</button>
-    <video id="video" controls autoplay playsinline></video>
-    <iframe id="ytframe" class="hidden" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
-    <div id="playerStatus" class="player-status hidden"></div>
+  <div id="player" class="player hidden" role="dialog" aria-label="now playing">
+    <div class="player-ambient" aria-hidden="true"></div>
+    <div class="player-top">
+      <div class="player-title" id="playerTitle">— now playing —</div>
+      <div class="player-top-actions">
+        <button class="player-btn" data-pip title="picture in picture">⧉</button>
+        <button class="player-btn" data-fullscreen title="fullscreen (f)">⛶</button>
+        <button class="player-close player-btn" data-close title="back to the forest (esc)">✕</button>
+      </div>
+    </div>
+    <div class="player-stage">
+      <video id="video" controls autoplay playsinline></video>
+      <iframe id="ytframe" class="hidden" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+      <div id="playerStatus" class="player-status hidden"></div>
+    </div>
+    <div class="player-bar">
+      <button class="player-btn" id="playPause" title="play / pause (space)">▶</button>
+      <div class="player-seek" id="playerSeek"><div class="player-seek-fill" id="playerSeekFill"></div></div>
+      <span class="player-time" id="playerTime">0:00 / 0:00</span>
+      <button class="player-btn" id="muteBtn" title="mute (m)">🔊</button>
+      <input type="range" id="playerVol" min="0" max="1" step="0.05" value="1" class="player-vol" title="volume"/>
+      <button class="player-btn" id="skipBack" title="back 10s">↺10</button>
+      <button class="player-btn" id="skipFwd" title="forward 10s">↻10</button>
+    </div>
+    <div class="player-hints">space · play/pause &nbsp;·&nbsp; ←/→ · seek 10s &nbsp;·&nbsp; f · fullscreen &nbsp;·&nbsp; m · mute &nbsp;·&nbsp; esc · close</div>
   </div>
 
   <footer>
@@ -170,6 +192,6 @@
     <span>Streamio — grown in the forest, for the forest. Sources: <a href="https://github.com/Stremio/stremio-addon-sdk" target="_blank" rel="noopener">community addons</a> · Cinemeta. Stream responsibly. 🍃</span>
   </footer>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

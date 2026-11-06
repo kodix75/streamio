@@ -147,7 +147,7 @@ Cinemeta + Stremio addon protocol · hls.js · WebTorrent (CDN‑lazy) · Electr
 | --- | --- |
 | `streamio` says command not found | `export PATH=$PATH:~/.local/bin` (add it to `~/.bashrc`) |
 | posters don't load | cinemeta is down or offline; wait or plant your catalogs from addons |
-| torrents won't start | try a stream with real peers, or use a debrid addon; webtorrent needs public swarm |
+| torrents won't start | try a stream with real peers, or use a debrid addon; webtorrent needs public swarm. The player falls back to the trailer when a swarm stays quiet |
 | port busy | `streamio --port 8488` or `streamio --stop` first |
 
 ## 💚 thanks & kin
@@ -156,6 +156,8 @@ The interface borrows heat from the forest and honesty from these kin:
 [raffi](https://github.com/kaleidal/raffi) · [Opal](https://github.com/debpalash/Opal) ·
 [source code / inspiration: Stremio Neo](https://www.reddit.com/r/StremioAddons/comments/1pnbp5z/stremio_neo_a_modern_looking_open_source_form_of/) ·
 [stremio-addon-sdk](https://github.com/Stremio/stremio-addon-sdk) thanks for the protocol 🍊 ·
+[Stremio Horizon](https://github.com/Aqu1tain/stremio-horizon) · [KVideo](https://github.com/KuekHaoYang/KVideo) (Liquid Glass) ·
+[Liquid-Glass-UI-Video-Player](https://github.com/b4-behroz/Liquid-Glass-UI-Video-Player) · [Plexflix](https://github.com/stshaw93155/plexflix) ·
 Ori and the Blind Forest‑style game HUDs & fantasy‑map infographics for the checkpoint-dial
 hero, vine-threaded rails, POI-bubble library map, and firefly ambient (kept in the forest mood) 🌲
 
