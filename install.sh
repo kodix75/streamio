@@ -175,6 +175,14 @@ case "${1:-}" in
       rm -f "$f"
     done
     pkill -f "$STREAMIO_HOME/server/index.js" 2>/dev/null || true
+    # also kill anything on our ports
+    for p in 8477 7000; do
+      for pid in $(ls /proc 2>/dev/null | grep -E '^[0-9]+$'); do
+        [ -r /proc/$pid/cmdline ] || continue
+        cmd=$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null)
+        case "$cmd" in *"http.server $p"*|*"http.server  8477"*) kill $pid 2>/dev/null ;; esac
+      done
+    done
     echo "streamio stopped (web + backend)"; exit 0 ;;
   --uninstall) exec bash -c 'curl -fsSL https://raw.githubusercontent.com/STREAMIO_REPO_PLACEHOLDER/main/install.sh | bash -s -- --uninstall' ;;
 esac
