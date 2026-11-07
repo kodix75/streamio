@@ -39,6 +39,17 @@ function pickEncoder() {
 }
 const H264_ENCODER = FFMPEG ? pickEncoder() : null;
 
+// can this ffmpeg DECODE H.265/x265? "ffmpeg-free" builds ship without the decoder,
+// and most modern releases are x265 — know thy limits before promising to transcode
+function canDecodeHevc() {
+  if (!FFMPEG) return false;
+  try {
+    const out = execSync(`${FFMPEG} -hide_banner -decoders 2>/dev/null`, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    return /^\s*[A-Z.]*\s*hevc\s/m.test(out) || /\bV.*\bhevc\b/.test(out);
+  } catch (e) { return false }
+}
+const HEVC_DECODER = canDecodeHevc();
+
 function isDirectlyPlayable(name) {
   return /\.(mp4|webm|ogg|m4v|mov)$/i.test(name);
 }
@@ -122,7 +133,11 @@ function startTorrent(magnet, cb) {
             sess.transcodedReady = true;
           } else {
             sess.transcoding = false;
-            sess.transcodeError = "transcode failed: " + stderr.slice(-300);
+            if (/no decoder found for: hevc/i.test(stderr) && !HEVC_DECODER) {
+              sess.transcodeError = "🌲 this file is H.265/x265 and the ffmpeg on this machine can't decode it — pick a 🌲264 source, plant a debrid key, or run the Stremio server engine";
+            } else {
+              sess.transcodeError = "transcode failed: " + stderr.slice(-300);
+            }
             sess.transcodedReady = false;
           }
         });
@@ -164,7 +179,7 @@ const server = http.createServer((req, res) => {
 
   // health
   if (path === "/health" || path === "/") {
-    json(res, 200, { ok: true, service: "streamio-backend", sessions: sessions.size, ffmpeg: !!FFMPEG });
+    json(res, 200, { ok: true, service: "streamio-backend", sessions: sessions.size, ffmpeg: !!FFMPEG, hevc: !!HEVC_DECODER, h264enc: H264_ENCODER });
     return;
   }
 
@@ -315,6 +330,7 @@ server.listen(PORT, HOST, () => {
   console.log(`🌿 streamio-backend listening on http://${HOST}:${PORT}`);
   console.log("   ffmpeg:", FFMPEG || "(not found — MKV/H.265 won't transcode)");
   if (FFMPEG) console.log("   h264 encoder:", H264_ENCODER || "(none — install full ffmpeg from RPM Fusion)");
+  if (FFMPEG) console.log("   h265 decode:", HEVC_DECODER ? "yes" : "no — x265 sources need the Stremio server engine or a debrid key");
   console.log("   health:  curl http://127.0.0.1:" + PORT + "/health");
 });
 

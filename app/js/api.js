@@ -228,6 +228,19 @@ export async function backendAvailable(){
     return r.ok;
   }catch(e){ return false }
 }
+
+/* decode capability of the local backend — "ffmpeg-free" builds ship without
+   an H.265 decoder, so x265 sources should be avoided and 264 ones preferred */
+let _health = null;
+export async function backendHealth(){
+  if (_health) return _health;
+  try{
+    const r = await fetch(`${backendUrl()}/health`, { signal: AbortSignal.timeout(1500) });
+    _health = r.ok ? await r.json() : { ok: false };
+  }catch(e){ _health = { ok: false } }
+  return _health;
+}
+export function backendHevc(){ return !!(_health && _health.hevc) }
 export async function backendPlay(magnet){
   const r = await fetch(`${backendUrl()}/play`, {
     method: "POST",

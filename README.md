@@ -99,7 +99,26 @@ HTTP streams with seeking. Without it, Streamio falls back to in-browser WebTorr
 
 Paste a Real-Debrid / AllDebrid API key in **addons → debrid** and Torrentio streams arrive as direct files.
 
-The scaffold lives at [`packaging/com.streamio.Streamio.yml`](packaging/com.streamio.Streamio.yml)
+### ▸ Stremio server (the "any film" engine — recommended for torrents)
+
+For the full "watch any film" experience (native libtorrent + ffmpeg transcoding),
+run the free Stremio streaming server alongside Streamio:
+
+```bash
+# Docker (easiest)
+docker run -d -p 11470:11470 -p 12470:12470 -e NO_CORS=1 stremio/server:latest
+
+# or download the binary from https://www.stremio.com/download-service
+```
+
+Then open Streamio → **addons → Stremio server** → test (should say "✓ connected").
+Streamio will automatically use Stremio's native engine for torrent streams.
+
+> 🌲 **the x265 reality:** Fedora's default `ffmpeg-free` build ships **without an H.265 decoder**,
+> and most modern releases are x265. Streamio checks your backend's capabilities on startup
+> (`curl http://127.0.0.1:7000/health` → `"hevc":false`) and quietly lifts 🌲264 sources to the
+> top of the stream list; picking an x265 row shows a gentle steering note instead of a black screen.
+> For full codec freedom, install full ffmpeg (RPM Fusion) or run the Docker Stremio server above.
 with build steps in its header comments — **PRs welcome**, the flatpack-forest needs a gardener. 🪴
 
 <details>

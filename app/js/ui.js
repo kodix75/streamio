@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=6";
-import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=6";
-import { open as openPlayer } from "./player.js?v=6";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendHealth, backendHevc, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=7";
+import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=7";
+import { open as openPlayer } from "./player.js?v=7";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -333,6 +333,12 @@ async function paintStreams(zone, type, id, title, refMeta){
     return;
   }
   const kindLabel = { file:"file", hls:"hls", torrent:"torrent", yt:"youtube", external:"link", unknown:"?" };
+  /* if the local backend can't decode H.265, surface 🌲264 sources first —
+     seed count still decides the order within each group (sort is stable) */
+  try{
+    const h = await backendHealth();
+    if (h.ok && !h.hevc) list = [...list].sort((a,b) => Number(/x264|h264|avc|xvid/i.test(streamTitle(b))) - Number(/x264|h264|avc|xvid/i.test(streamTitle(a))));
+  }catch{}
   zone.innerHTML = `<div class="row-head" style="margin:18px 0 10px"><div class="row-title"><h2>streams</h2></div>
       <span class="row-kicker">${list.length} gossamer threads · seeds first</span></div>
     <div class="streams">${list.map((s, i) => {
@@ -366,6 +372,18 @@ export function wireStreams(box){
     }
     // torrents: fall back to local backend (torrent-stream) if available
     if (b.dataset.kind === "torrent" && (await backendAvailable().catch(()=>false))){
+      // x265 sources need an HEVC decoder; "ffmpeg-free" ships without one —
+      // don't dead-end into a black video, steer the wanderer to a 264 source
+      const heal = await backendHealth().catch(()=>({}));
+      if (/x265|h\.?265|hevc/i.test(b.dataset.title || "") && !heal.hevc){
+        const zoneNote = b.closest(".streams")?.parentElement;
+        if (zoneNote && !document.getElementById("x265Note")){
+          const note = Object.assign(document.createElement("div"), { id: "x265Note", className: "empty", style: "margin:10px 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;color:var(--dim)" });
+          note.textContent = "🌲 this one is H.265/x265 — the ffmpeg on this machine can't decode it. pick a 🌲264 stream (they rise first), plant a debrid key, or run the Stremio server engine 🍄";
+          zoneNote.insertBefore(note, zoneNote.firstChild);
+        }
+        return;
+      }
       const btn = b;
       btn.style.opacity = ".6"; btn.style.pointerEvents = "none";
       openPlayer({ kind: "file", src: "", ref: b.dataset.ref, title: b.dataset.title });
@@ -387,7 +405,17 @@ export function wireStreams(box){
               if (sd.ready){ ready = true; break; }
               if (sd.error){ throw new Error(sd.error); }
               if (st) st.textContent = "🎞 transcoding… " + (i * 2) + "s";
-            }catch(e){ if (st) st.textContent = "transcode failed: " + e.message; break; }
+            }catch(e){
+              const em = String(e.message || e);
+              if (/x265|can't decode|pick a 🌲264/i.test(em)){
+                // codec wall — webtorrent can't decode it either, so no point falling back
+                if (st) st.textContent = em;
+                break;
+              }
+              // other transcode failures: try the swarm instead of hanging
+              openPlayer({ kind: "torrent", src: b.dataset.src, ref: b.dataset.ref, title: b.dataset.title });
+              break;
+            }
           }
           if (ready && video){ video.src = info.streamUrl; video.play().catch(()=>{}); if (st){ st.textContent = ""; st.classList.add("hidden"); } }
         } else {

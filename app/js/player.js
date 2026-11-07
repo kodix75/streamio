@@ -2,7 +2,7 @@
    STREAMIO · player.js — hls · direct files · webtorrent · yt
    grows whatever stream the addons hand it
    ═══════════════════════════════════════════════════════════ */
-import { saveProgress, getProgress } from "./library.js?v=6";
+import { saveProgress, getProgress } from "./library.js?v=7";
 
 const cdn = (src) => new Promise((ok, fail) => {
   if (document.querySelector(`script[data-cdn="${src}"]`)) return ok();
