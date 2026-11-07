@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendHealth, backendHevc, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=11";
-import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=11";
-import { open as openPlayer } from "./player.js?v=11";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendHealth, backendHevc, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=12";
+import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=12";
+import { open as openPlayer } from "./player.js?v=12";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -447,7 +447,7 @@ export function wireStreams(box){
               const pct = sd.size ? Math.min(99, Math.round(sd.downloaded / sd.size * 100)) : 0;
               const cvt = sd.outEstimate ? Math.min(99, Math.round(sd.outSize / sd.outEstimate * 100)) : 0;
               const mb = sd.speed ? (sd.speed / 1048576).toFixed(1) : "0";
-              if (i > 75 && !(sd.downloaded > 0)){
+              if (i > 75 && !(sd.downloaded > 0) && !(sd.outSize > 2100000)){
                 st.textContent = "the swarm is quiet for this one — try another row 🦗 (esc • pick a different source)";
               } else {
                 st.textContent = (pct || cvt)
