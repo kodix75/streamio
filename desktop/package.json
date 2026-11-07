@@ -1,10 +1,11 @@
 {
   "name": "streamio",
   "productName": "Streamio",
-  "version": "0.4.0",
-  "description": "A media center for the forest — movies & series from community addons.",
+  "version": "1.11.0",
+  "description": "A media center for the forest \u2014 movies & series from community addons.",
   "main": "main.js",
-  "author": "aidan Genoud (kodix75)",
+  "author": "aidan Genoud <aidan.genoud@jobtrek.ch>",
+  "homepage": "https://github.com/kodix75/streamio",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -18,15 +19,35 @@
   "build": {
     "appId": "streamio.forest",
     "productName": "Streamio",
-    "directories": { "output": "out" },
-    "files": ["main.js"],
-    "extraFiles": [{ "from": "../app", "to": "app" }, { "from": "../server", "to": "server" }],
-    "linux": {
-      "target": ["AppImage", "deb"],
-      "category": "AudioVideo;Video",
-      "icon": "icons",
-      "mimeTypes": ["x-scheme-handler/streamio"]
+    "directories": {
+      "output": "out"
     },
-    "appImage": { "artifactName": "Streamio-${version}.AppImage" }
+    "files": [
+      "main.js"
+    ],
+    "extraFiles": [
+      {
+        "from": "../app",
+        "to": "app"
+      },
+      {
+        "from": "../server",
+        "to": "server"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo;Video",
+      "icon": "../app/assets/logo.png",
+      "mimeTypes": [
+        "x-scheme-handler/streamio"
+      ]
+    },
+    "appImage": {
+      "artifactName": "Streamio-${version}.AppImage"
+    }
   }
 }

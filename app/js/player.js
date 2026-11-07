@@ -2,7 +2,7 @@
    STREAMIO · player.js — hls · direct files · webtorrent · yt
    grows whatever stream the addons hand it
    ═══════════════════════════════════════════════════════════ */
-import { saveProgress, getProgress } from "./library.js?v=7";
+import { saveProgress, getProgress } from "./library.js?v=11";
 
 const cdn = (src) => new Promise((ok, fail) => {
   if (document.querySelector(`script[data-cdn="${src}"]`)) return ok();
@@ -138,6 +138,7 @@ export function close(){
   if (video.dataset.kind !== "yt" && !video.paused && video.currentTime)
     saveProgress(video.dataset.ref, video.currentTime, video.duration);
   video.pause();
+  video.dataset.transcoding = "";
   window.streamioTorrent?.destroy?.(); window.streamioTorrent = null;
   elYt().src = "";
   elPlayer().classList.add("hidden");
@@ -174,6 +175,15 @@ function setupPlayerControls(){
   video.addEventListener("pause", sync);
   video.addEventListener("loadedmetadata", sync);
   video.addEventListener("volumechange", sync);
+
+  // live-transcode keepalive: while a growing mp4 is being served the browser can
+  // reach the (temporary) end of the available bytes — nudge it forward again
+  video.addEventListener("ended", () => {
+    if (video.dataset.transcoding !== "1") return;
+    const end = video.buffered.length ? video.buffered.end(video.buffered.length - 1) : video.currentTime;
+    if (end > video.currentTime + 0.5) video.currentTime = Math.max(0, end - 1);
+    video.play().catch(()=>{});
+  });
 
   playPause?.addEventListener("click", () => { if (video.paused) video.play().catch(()=>{}); else video.pause() });
   muteBtn?.addEventListener("click", () => { video.muted = !video.muted });

@@ -78,6 +78,65 @@ function pickVideoFile(files) {
   return vids.sort((a, b) => b.length - a.length)[0];
 }
 
+// serve a file from disk with range support; while the file is still growing
+// (live transcode) ranges are capped at the size that exists right now —
+// the browser reconnects for more buffer as conversion inches forward
+async function serveFileRange(req, res, filePath, growing = false, ultimateTotal = 0) {
+  // freshly truncated (conversion still ramping up) — hold the door open until
+  // real fragments exist, so the player's media load never sees a barren file
+  for (let i = 0; i < 80 && !res.writableEnded; i++) {
+    try { if (fs.statSync(filePath).size > 64) break; } catch (e) {}
+    await new Promise(r => setTimeout(r, 250));
+  }
+  let actual = 0;
+  try { actual = fs.statSync(filePath).size; } catch (e) {}
+  // while growing, never advertise the (small) current size as the total —
+  // otherwise the browser treats the chunk as the whole file and stops at its end.
+  // report a generous upper bound instead, so playback keeps flowing as more arrives.
+  const total = growing ? Math.max(actual, ultimateTotal || actual) : actual;
+  const m = req.headers.range && /bytes=(\d+)-(\d*)/.exec(req.headers.range);
+  let start = 0;
+  let end = Math.max(0, actual - 1);
+  if (m) {
+    start = parseInt(m[1], 10) || 0;
+    if (m[2]) end = parseInt(m[2], 10);
+  }
+  // hold the door open until the requested bytes actually exist (live growth),
+  // so a range request that runs past the current frontier doesn't 503-and-die
+  if (start >= actual) {
+    for (let i = 0; i < 80 && !res.writableEnded; i++) {
+      try { const s = fs.statSync(filePath).size; if (s > start) { actual = s; break; } } catch (e) {}
+      await new Promise(r => setTimeout(r, 250));
+    }
+    try { actual = fs.statSync(filePath).size; } catch (e) {}
+    if (actual === 0 || start >= actual) {
+      try { res.writeHead(503, { "Content-Type": "application/json" }); } catch (e) {}
+      try { res.end(JSON.stringify({ error: "still growing" })); } catch (e) {}
+      return;
+    }
+    end = Math.min(end, actual - 1);
+    if (end < start) end = actual - 1;
+  }
+  if (actual === 0 || start > end) {
+    // a rare race (file gone between stat and read) — not video data
+    try { res.writeHead(503, { "Content-Type": "application/json" }); } catch (e) {}
+    try { res.end(JSON.stringify({ error: "still growing" })); } catch (e) {}
+    return;
+  }
+  const caps = { "Accept-Ranges": "bytes", "Content-Type": "video/mp4" };
+  if (m) {
+    res.writeHead(206, { ...caps, "Content-Range": `bytes ${start}-${end}/${total}`, "Content-Length": end - start + 1 });
+  } else {
+    // growing: Content-Length = bytes we actually have right now (so the browser
+    // reads them and then asks for the next range); finished: the whole file
+    res.writeHead(200, { ...caps, "Content-Length": growing ? actual : total });
+  }
+  const stream = fs.createReadStream(filePath, { start, end });
+  stream.pipe(res);
+  stream.on("error", () => { try { res.end(); } catch (e) {} });
+  res.on("close", () => { try { stream.destroy(); } catch (e) {} });
+}
+
 function startTorrent(magnet, cb) {
   // append public trackers if the magnet has none
   if (!/[?&]tr=/.test(magnet)) {
@@ -113,11 +172,15 @@ function startTorrent(magnet, cb) {
         sess.transcoding = true;
         const outPath = path.join(os.tmpdir(), `streamio_${id}.mp4`);
         sess.transcodePath = outPath;
+        // fragmented mp4 (+empty_moov) — playable from the first fragments, so the film
+        // starts streaming while the conversion is still running (faststart can't do that)
         const args = [
           "-y", "-i", "pipe:0",
-          "-c:v", H264_ENCODER, "-preset", "fast", "-crf", "23",
+          "-analyzeduration", "0", "-probesize", "5000000",
+          "-c:v", H264_ENCODER, "-preset", "veryfast", "-crf", "23",
           "-c:a", "aac", "-b:a", "192k",
-          "-movflags", "+faststart",
+          "-max_muxing_queue_size", "1024",
+          "-movflags", "+frag_keyframe+empty_moov+default_base_moof",
           outPath,
         ];
         const ff = spawn(FFMPEG, args, { stdio: ["pipe", "pipe", "pipe"] });
@@ -189,12 +252,31 @@ const server = http.createServer((req, res) => {
     const id = statusMatch[1];
     const sess = sessions.get(id);
     if (!sess) { json(res, 404, { error: "session not found" }); return; }
+    // swarm truth — how much of the film has actually downloaded (single-file torrents ≈ the film itself)
+    let downloaded = 0, speed = 0;
+    try {
+      const s = sess.engine?.swarm ?? {};
+      const d = +s.downloaded, v = +s.downloadSpeed;
+      downloaded = (Number.isFinite(d) && d > 0) ? Math.round(d) : 0;
+      speed = (Number.isFinite(v) && v > 0) ? Math.round(v) : 0;
+    } catch (e) {}
+    let outSize = 0, outExists = false;
+    if (sess.transcodePath) {
+      try { outExists = fs.existsSync(sess.transcodePath); if (outExists) outSize = fs.statSync(sess.transcodePath).size; } catch (e) {}
+    }
+    // rough final-size estimate for the % readout (re-compresses to ≈55–65% of source at crf 23)
+    const est = Math.round((sess.file?.length ?? 0) * 0.6) || 0;
     json(res, 200, {
       ready: sess.playable || !!sess.transcodedReady,
       transcoding: !!sess.transcoding,
       playable: !!sess.playable,
+      // output file exists with real fragments → the player can already start streaming live
+      streamable: sess.playable || (outExists && outSize > 64 && !sess.transcodeError),
       error: sess.transcodeError || null,
       name: sess.name,
+      size: sess.file?.length ?? 0,
+      downloaded, speed,
+      outSize, outEstimate: est,
     });
     return;
   }
@@ -222,7 +304,13 @@ const server = http.createServer((req, res) => {
     const sess = sessions.get(id);
     if (!sess) { json(res, 404, { error: "session not found" }); return; }
 
-    // transcoding in progress -> 202
+    // transcoded/output file exists (growing live, or complete) → serve it straight away
+    if (sess.transcodePath && fs.existsSync(sess.transcodePath)) {
+      serveFileRange(req, res, sess.transcodePath, !!sess.transcoding, sess.file?.length || 0);
+      return;
+    }
+
+    // transcoding in progress, nothing written yet -> 202
     if (sess.transcoding) {
       cors(res);
       res.writeHead(202, { "Content-Type": "application/json", "Retry-After": "5" });
@@ -237,36 +325,13 @@ const server = http.createServer((req, res) => {
 
     // pick the file to stream
     let filePath = null;
-    let total = 0;
     if (sess.transcodePath && sess.transcodedReady && fs.existsSync(sess.transcodePath)) {
-      total = fs.statSync(sess.transcodePath).size;
       filePath = sess.transcodePath;
     }
 
     if (filePath) {
       // stream from transcoded file on disk (with range support)
-      if (req.headers.range) {
-        const m = /bytes=(\d+)-(\d*)/.exec(req.headers.range);
-        if (m) {
-          const start = parseInt(m[1], 10);
-          const end = m[2] ? parseInt(m[2], 10) : total - 1;
-          const chunkSize = end - start + 1;
-          res.writeHead(206, {
-            "Content-Range": `bytes ${start}-${end}/${total}`,
-            "Accept-Ranges": "bytes",
-            "Content-Length": chunkSize,
-            "Content-Type": "video/mp4",
-          });
-          const stream = fs.createReadStream(filePath, { start, end });
-          stream.pipe(res);
-          stream.on("error", () => { try { res.end(); } catch (e) {} });
-          return;
-        }
-      }
-      res.writeHead(200, { "Content-Length": total, "Content-Type": "video/mp4", "Accept-Ranges": "bytes" });
-      const stream = fs.createReadStream(filePath);
-      stream.pipe(res);
-      stream.on("error", () => { try { res.end(); } catch (e) {} });
+      serveFileRange(req, res, filePath);
       return;
     }
 

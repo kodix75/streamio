@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
    STREAMIO · ui.js — every view the forest shows you
    ═══════════════════════════════════════════════════════════ */
-import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendHealth, backendHevc, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=7";
-import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=7";
-import { open as openPlayer } from "./player.js?v=7";
+import { cinemetaCatalog, addonCatalogs, meta, streams, classify, streamPills, streamTitle, streamSource, addonUrls, archiveCatalog, archiveMeta, archiveStreams, archiveSearch, backendAvailable, backendHealth, backendHevc, backendPlay, backendUrl, stremioServerAvailable, stremioStreamUrl, stremioServerUrl } from "./api.js?v=11";
+import { isSaved, toggleSaved, savedItems, continueWatching } from "./library.js?v=11";
+import { open as openPlayer } from "./player.js?v=11";
 
 export const $  = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -357,6 +357,28 @@ async function paintStreams(zone, type, id, title, refMeta){
   wireStreams(zone);
 }
 
+/* begin playback once the browser has enough data to actually play —
+   calling play() too early gets swallowed by load races (AbortError) or the
+   autoplay guard seconds after the real click (NotAllowedError) */
+function startStream(video, st, url){
+  if (!video) return;
+  video.src = url;
+  const kick = () => {
+    video.removeEventListener("canplay", kick);
+    video.play().then(
+      () => { if (st){ st.textContent = ""; st.classList.add("hidden"); } },
+      (err) => {
+        if (String(err?.name) === "NotAllowedError" && st){
+          st.textContent = "▶ tap ▶ (or press space) to start — the forest needs your go-ahead 🌿";
+          st.classList.remove("hidden");
+        }
+      }
+    );
+  };
+  if (video.readyState >= 3) kick();
+  else video.addEventListener("canplay", kick, { once: true });
+}
+
 export function wireStreams(box){
   $$(".stream", box).forEach(b => b.onclick = async () => {
     if (b.dataset.kind === "external"){ window.open(b.dataset.src, "_blank"); return }
@@ -394,32 +416,53 @@ export function wireStreams(box){
         const video = document.getElementById("video");
         const st = document.getElementById("playerStatus");
         if (info.transcoding){
-          if (st){ st.textContent = "🎞 transcoding to a playable format… (this can take a few minutes)"; st.classList.remove("hidden"); }
-          // poll status until ready
-          let ready = false;
-          for (let i = 0; i < 300 && !ready; i++){
-            await new Promise(r => setTimeout(r, 2000));
-            try{
-              const sr = await fetch(`${backendUrl()}/status/${info.id}`);
-              const sd = await sr.json();
-              if (sd.ready){ ready = true; break; }
-              if (sd.error){ throw new Error(sd.error); }
-              if (st) st.textContent = "🎞 transcoding… " + (i * 2) + "s";
-            }catch(e){
-              const em = String(e.message || e);
+          if (st){ st.textContent = "🌿 fetching the film & converting… play starts on its own"; st.classList.remove("hidden"); }
+          // poll until pieces are in and ffmpeg has written the first fragments,
+          // then wire the player — the film starts while the conversion keeps running
+          let wired = false;
+          for (let i = 0; i < 900; i++){
+            const sr = await fetch(`${backendUrl()}/status/${info.id}`, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+            const sd = sr && sr.ok ? await sr.json().catch(() => null) : null;
+            if (!sd) continue;                       // hiccup — keep waiting, don't abort on one miss
+            if (sd.error){
+              const em = String(sd.error);
               if (/x265|can't decode|pick a 🌲264/i.test(em)){
                 // codec wall — webtorrent can't decode it either, so no point falling back
                 if (st) st.textContent = em;
-                break;
+                return;
               }
-              // other transcode failures: try the swarm instead of hanging
-              openPlayer({ kind: "torrent", src: b.dataset.src, ref: b.dataset.ref, title: b.dataset.title });
+              throw new Error(sd.error);             // real failure → the catch falls back to webtorrent
+            }
+            if (!wired && (sd.streamable || sd.ready) && video){
+              wired = true;
+              if (st){ st.textContent = ""; st.classList.add("hidden"); }
+              video.dataset.transcoding = sd.ready ? "" : "1";
+              startStream(video, st, info.streamUrl);
+            }
+            if (sd.ready){
+              if (video) video.dataset.transcoding = "";
               break;
             }
+            if (!wired && st && sd.transcoding){
+              const pct = sd.size ? Math.min(99, Math.round(sd.downloaded / sd.size * 100)) : 0;
+              const cvt = sd.outEstimate ? Math.min(99, Math.round(sd.outSize / sd.outEstimate * 100)) : 0;
+              const mb = sd.speed ? (sd.speed / 1048576).toFixed(1) : "0";
+              if (i > 75 && !(sd.downloaded > 0)){
+                st.textContent = "the swarm is quiet for this one — try another row 🦗 (esc • pick a different source)";
+              } else {
+                st.textContent = (pct || cvt)
+                  ? `🌿 pieces ${pct}% · ${mb} MB/s${cvt ? ` · 🎞 converting ${cvt}%` : ""}`
+                  : "🌿 waking the pieces…";
+              }
+              st.classList.remove("hidden");
+            }
+            await new Promise(r => setTimeout(r, 2000));
           }
-          if (ready && video){ video.src = info.streamUrl; video.play().catch(()=>{}); if (st){ st.textContent = ""; st.classList.add("hidden"); } }
         } else {
-          if (video){ video.src = info.streamUrl; video.play().catch(()=>{}); }
+          if (video){
+            video.src = info.streamUrl;
+            startStream(video, st, info.streamUrl);
+          }
           if (st){ st.textContent = ""; st.classList.add("hidden"); }
         }
       }catch(e){
